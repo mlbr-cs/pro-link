@@ -101,7 +101,7 @@ class _InternDashboardState extends State<InternDashboard> {
           const SizedBox(height: 24),
           _InternSummaryCard(
             title: 'Name',
-            detail: user?.name ?? 'Lina Boussaid',
+            detail: user?.name ?? 'mohamed lamine',
             icon: Icons.person_outline,
           ),
           const SizedBox(height: 14),
@@ -113,7 +113,7 @@ class _InternDashboardState extends State<InternDashboard> {
           const SizedBox(height: 14),
           _InternSummaryCard(
             title: 'Department',
-            detail: user?.department ?? 'Software Engineering',
+            detail: user?.department ?? 'Computer security Engineering',
             icon: Icons.apartment_outlined,
           ),
         ],
