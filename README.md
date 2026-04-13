@@ -68,7 +68,8 @@ lib/
 ```
 
 ---
-
+Sprints
+SprintFocusPointsSprint 1Frontend UI & role dashboards3 ptsSprint 2Core functions per role2.5 ptsSprint 3Backend, auth & data handling2.5 ptsSprint 4Search & responsive design1 ptCreativityExtra APIs, notifications, design2 pts
 ---
 
 ## License
