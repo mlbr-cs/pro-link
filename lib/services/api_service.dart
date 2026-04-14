@@ -17,7 +17,7 @@ class ApiService {
 
     if (normalizedEmail.contains('admin')) {
       return const AppUser(
-        name: 'Nadia Rahal',
+        name: 'jon khaled',
         email: 'admin@prolink.edu',
         department: 'Career Services',
         role: UserRole.admin,
@@ -26,7 +26,7 @@ class ApiService {
 
     if (normalizedEmail.contains('mentor')) {
       return const AppUser(
-        name: 'Karim Benali',
+        name: 'Lucas abdo',
         email: 'mentor@prolink.edu',
         department: 'Industry Partnerships',
         role: UserRole.mentor,
@@ -34,7 +34,7 @@ class ApiService {
     }
 
     return AppUser(
-      name: 'Lina Boussaid',
+      name: 'mohamed lamine',
       email: normalizedEmail,
       department: 'Software Engineering',
       role: UserRole.intern,
