@@ -5,6 +5,7 @@ import 'package:pro_link/screens/auth/login_screen.dart';
 import 'package:pro_link/screens/intern/intern_dashboard.dart';
 import 'package:pro_link/screens/mentor/mentor_dashboard.dart';
 import 'package:pro_link/services/api_service.dart';
+import 'package:pro_link/services/app_data_provider.dart';
 import 'package:pro_link/services/auth_provider.dart';
 
 void main() {
@@ -22,6 +23,11 @@ class ProLinkApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) =>
               AuthProvider(apiService: context.read<ApiService>()),
+        ),
+        ChangeNotifierProvider(
+          create: (context) =>
+              AppDataProvider(apiService: context.read<ApiService>())
+                ..initialize(),
         ),
       ],
       child: MaterialApp(

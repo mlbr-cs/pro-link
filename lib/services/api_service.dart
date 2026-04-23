@@ -1,6 +1,11 @@
 import 'dart:async';
 
 import 'package:pro_link/models/app_user.dart';
+import 'package:pro_link/models/department.dart';
+import 'package:pro_link/models/intern.dart';
+import 'package:pro_link/models/mentor_profile.dart';
+import 'package:pro_link/models/training_document.dart';
+import 'package:pro_link/services/fake_data.dart';
 
 class ApiService {
   Future<AppUser> login({
@@ -17,7 +22,7 @@ class ApiService {
 
     if (normalizedEmail.contains('admin')) {
       return const AppUser(
-        name: 'jon khaled',
+        name: 'Jon Khaled',
         email: 'admin@prolink.edu',
         department: 'Career Services',
         role: UserRole.admin,
@@ -26,18 +31,38 @@ class ApiService {
 
     if (normalizedEmail.contains('mentor')) {
       return const AppUser(
-        name: 'Lucas abdo',
+        name: 'Lucas Abdo',
         email: 'mentor@prolink.edu',
-        department: 'Industry Partnerships',
+        department: 'Engineering',
         role: UserRole.mentor,
       );
     }
 
     return AppUser(
-      name: 'mohamed lamine',
+      name: 'Mohamed Lamine',
       email: normalizedEmail,
-      department: 'Software Engineering',
+      department: 'Engineering',
       role: UserRole.intern,
     );
+  }
+
+  Future<List<Intern>> getInterns() async {
+    return fakeInterns;
+  }
+
+  Future<List<Department>> getDepartments() async {
+    return fakeDepartments;
+  }
+
+  Future<List<MentorProfile>> getMentors() async {
+    return fakeMentors;
+  }
+
+  Future<List<Intern>> getPendingRegistrations() async {
+    return fakeInterns.where((intern) => intern.registrationPending).toList();
+  }
+
+  Future<List<TrainingDocument>> getTrainingDocuments() async {
+    return fakeTrainingDocuments;
   }
 }
