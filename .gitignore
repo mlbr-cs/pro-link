@@ -43,3 +43,36 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+###############################################################################
+# Django / Python backend (added)
+###############################################################################
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment secrets (NEVER COMMIT)
+.env
+.env.*
+!.env.example
+*.env
+
+# Django local runtime
+media/
+staticfiles/
+db.sqlite3
+db.sqlite3-journal
+
+###############################################################################
+# Database dumps / exports (added)
+###############################################################################
+*.sql
+*.dump
+*.dmp
+*.backup
+*.bak
