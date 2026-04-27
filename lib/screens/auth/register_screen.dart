@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:pro_link/models/app_user.dart';
-import 'package:pro_link/services/app_data_provider.dart';
-import 'package:pro_link/services/auth_provider.dart';
-import 'package:pro_link/screens/auth/register_screen.dart';
+import 'package:pro_link/services/api_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
-  static const routeName = '/login';
+  static const routeName = '/register';
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+  bool _isSubmitting = false;
+  String _selectedRole = 'intern';
 
   @override
   void dispose() {
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -32,21 +37,26 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final authProvider = context.read<AuthProvider>();
-    final appDataProvider = context.read<AppDataProvider>();
+    setState(() {
+      _isSubmitting = true;
+    });
 
     try {
-      final role = await authProvider.login(
+      await context.read<ApiService>().register(
+        fullName: _fullNameController.text,
         email: _emailController.text,
         password: _passwordController.text,
+        role: _selectedRole,
       );
-      await appDataProvider.loadForRole(role);
 
       if (!mounted) {
         return;
       }
 
-      Navigator.pushReplacementNamed(context, _routeForRole(role));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Your account is pending admin approval')),
+      );
+      Navigator.pop(context);
     } on Exception catch (error) {
       if (!mounted) {
         return;
@@ -57,28 +67,22 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Text(error.toString().replaceFirst('Exception: ', '')),
         ),
       );
-    }
-  }
-
-  String _routeForRole(UserRole role) {
-    switch (role) {
-      case UserRole.admin:
-        return '/admin';
-      case UserRole.mentor:
-        return '/mentor';
-      case UserRole.intern:
-        return '/intern';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final appDataProvider = context.watch<AppDataProvider>();
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),
+      appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -112,14 +116,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
-                          Icons.cases_outlined,
+                          Icons.person_add_alt_1_outlined,
                           color: Colors.white,
                           size: 30,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Welcome to Pro-Link',
+                        'Create your Pro-Link account',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF101828),
@@ -127,20 +131,33 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Access internship operations, mentor oversight, and intern tracking from one secure portal.',
+                        'Register as an intern or mentor. New accounts stay pending until an admin approves them.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF475467),
                           height: 1.5,
                         ),
                       ),
                       const SizedBox(height: 28),
-                      _LoginHintCard(theme: theme),
-                      const SizedBox(height: 24),
+                      TextFormField(
+                        controller: _fullNameController,
+                        decoration: _inputDecoration(
+                          label: 'Full Name',
+                          hint: 'Enter your full name',
+                          icon: Icons.badge_outlined,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your full name.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 18),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         decoration: _inputDecoration(
-                          label: 'Institutional Email',
+                          label: 'Email',
                           hint: 'name@prolink.edu',
                           icon: Icons.alternate_email_outlined,
                         ),
@@ -155,12 +172,41 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
                       const SizedBox(height: 18),
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedRole,
+                        decoration: _inputDecoration(
+                          label: 'Role',
+                          hint: 'Select your role',
+                          icon: Icons.work_outline,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'intern',
+                            child: Text('Intern'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'mentor',
+                            child: Text('Mentor'),
+                          ),
+                        ],
+                        onChanged: _isSubmitting
+                            ? null
+                            : (value) {
+                                if (value == null) {
+                                  return;
+                                }
+                                setState(() {
+                                  _selectedRole = value;
+                                });
+                              },
+                      ),
+                      const SizedBox(height: 18),
                       TextFormField(
                         controller: _passwordController,
                         obscureText: _obscurePassword,
                         decoration: _inputDecoration(
                           label: 'Password',
-                          hint: 'Enter your password',
+                          hint: 'Create a password',
                           icon: Icons.lock_outline,
                           suffix: IconButton(
                             onPressed: () {
@@ -185,15 +231,43 @@ class _LoginScreenState extends State<LoginScreen> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: _obscureConfirmPassword,
+                        decoration: _inputDecoration(
+                          label: 'Confirm Password',
+                          hint: 'Re-enter your password',
+                          icon: Icons.lock_person_outlined,
+                          suffix: IconButton(
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              });
+                            },
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please confirm your password.';
+                          }
+                          if (value != _passwordController.text) {
+                            return 'Passwords do not match.';
+                          }
+                          return null;
+                        },
+                      ),
                       const SizedBox(height: 28),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton(
-                          onPressed:
-                              authProvider.isLoading ||
-                                  appDataProvider.isLoading
-                              ? null
-                              : _submit,
+                          onPressed: _isSubmitting ? null : _submit,
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF1B263B),
                             foregroundColor: Colors.white,
@@ -202,9 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),
-                          child:
-                              authProvider.isLoading ||
-                                  appDataProvider.isLoading
+                          child: _isSubmitting
                               ? const SizedBox(
                                   width: 22,
                                   height: 22,
@@ -214,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 )
                               : const Text(
-                                  'Sign In',
+                                  'Register',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
                                     fontSize: 15,
@@ -229,32 +301,20 @@ class _LoginScreenState extends State<LoginScreen> {
                           spacing: 4,
                           children: [
                             Text(
-                              "Don't have an account?",
+                              'Already have an account?',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: const Color(0xFF667085),
                               ),
                             ),
                             TextButton(
-                              onPressed:
-                                  authProvider.isLoading ||
-                                      appDataProvider.isLoading
+                              onPressed: _isSubmitting
                                   ? null
                                   : () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        RegisterScreen.routeName,
-                                      );
+                                      Navigator.pop(context);
                                     },
-                              child: const Text('Register'),
+                              child: const Text('Login'),
                             ),
                           ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Secure JWT authentication with role-based backend access.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF667085),
                         ),
                       ),
                     ],
@@ -292,45 +352,6 @@ class _LoginScreenState extends State<LoginScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF344054), width: 1.3),
-      ),
-    );
-  }
-}
-
-class _LoginHintCard extends StatelessWidget {
-  const _LoginHintCard({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4E7EC)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Backend-connected login',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF101828),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'After sign-in, dashboard data is loaded from the Django REST backend using your stored JWT token.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF475467),
-              height: 1.5,
-            ),
-          ),
-        ],
       ),
     );
   }

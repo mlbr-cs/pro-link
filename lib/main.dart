@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:pro_link/screens/admin/admin_dashboard.dart';
 import 'package:pro_link/screens/auth/login_screen.dart';
+import 'package:pro_link/screens/auth/register_screen.dart';
 import 'package:pro_link/screens/intern/intern_dashboard.dart';
 import 'package:pro_link/screens/mentor/mentor_dashboard.dart';
 import 'package:pro_link/services/api_service.dart';
@@ -26,8 +27,7 @@ class ProLinkApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (context) =>
-              AppDataProvider(apiService: context.read<ApiService>())
-                ..initialize(),
+              AppDataProvider(apiService: context.read<ApiService>()),
         ),
       ],
       child: MaterialApp(
@@ -37,6 +37,7 @@ class ProLinkApp extends StatelessWidget {
         initialRoute: LoginScreen.routeName,
         routes: {
           LoginScreen.routeName: (_) => const LoginScreen(),
+          RegisterScreen.routeName: (_) => const RegisterScreen(),
           AdminDashboard.routeName: (_) => const AdminDashboard(),
           MentorDashboard.routeName: (_) => const MentorDashboard(),
           InternDashboard.routeName: (_) => const InternDashboard(),
@@ -66,7 +67,7 @@ class ProLinkApp extends StatelessWidget {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.white,
         elevation: 0,
-        indicatorColor: baseColor.withOpacity(0.1),
+        indicatorColor: baseColor.withValues(alpha: 0.1),
         labelTextStyle: WidgetStateProperty.resolveWith(
           (states) => TextStyle(
             fontWeight: states.contains(WidgetState.selected)

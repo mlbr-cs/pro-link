@@ -68,7 +68,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
           child: SingleChildScrollView(
             key: ValueKey(_currentIndex),
             padding: const EdgeInsets.all(20),
-            child: pages[_currentIndex],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (dataProvider.errorMessage != null)
+                  _DashboardErrorBanner(message: dataProvider.errorMessage!),
+                pages[_currentIndex],
+              ],
+            ),
           ),
         ),
       ),
@@ -110,8 +117,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  void _logout(BuildContext context) {
-    context.read<AuthProvider>().logout();
+  Future<void> _logout(BuildContext context) async {
+    await context.read<AuthProvider>().logout();
+    if (!context.mounted) {
+      return;
+    }
+    context.read<AppDataProvider>().clear();
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 }
@@ -184,9 +195,9 @@ class _AdminOverview extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         const _InfoPanel(
-          title: 'Sprint 2 Admin Functions',
+          title: 'Connected Admin Functions',
           subtitle:
-              'You can now review intern records, assign departments and mentors, upload office timetables, and validate pending registrations using local Provider state.',
+              'This workspace now loads interns, departments, mentors, schedules, and registration updates from the Django REST backend.',
         ),
       ],
     );
@@ -217,7 +228,14 @@ class _InternDirectory extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        ...interns.map((intern) => _DirectoryCard(intern: intern)),
+        if (interns.isEmpty)
+          const _EmptyStateCard(
+            title: 'No interns returned yet',
+            subtitle:
+                'Intern records will appear here when the backend returns data.',
+          )
+        else
+          ...interns.map((intern) => _DirectoryCard(intern: intern)),
       ],
     );
   }
@@ -247,19 +265,26 @@ class _AssignmentScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Update internship placement details and save them to local state.',
+          'Update internship placement details and persist them through the backend assignment endpoint.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        ...interns.map(
-          (intern) => _AssignmentCard(
-            intern: intern,
-            departments: departments,
-            mentors: mentors,
+        if (interns.isEmpty)
+          const _EmptyStateCard(
+            title: 'No approved interns available',
+            subtitle:
+                'Approved intern assignments will appear here once registration is validated.',
+          )
+        else
+          ...interns.map(
+            (intern) => _AssignmentCard(
+              intern: intern,
+              departments: departments,
+              mentors: mentors,
+            ),
           ),
-        ),
       ],
     );
   }
@@ -283,7 +308,7 @@ class _OfficeTimetableScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Pick a timetable document now. A real upload endpoint can later replace the service method only.',
+          'Pick a timetable document and send it to the backend schedule upload endpoint.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -299,16 +324,23 @@ class _OfficeTimetableScreen extends StatelessWidget {
               return;
             }
 
-            context.read<AppDataProvider>().setOfficeTimetableFileName(
-              result.files.single.name,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Saved ${result.files.single.name} to local admin state.',
-                ),
-              ),
-            );
+            final file = result.files.single;
+            try {
+              await context.read<AppDataProvider>().uploadOfficeTimetable(file);
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Uploaded ${file.name} successfully.')),
+              );
+            } catch (error) {
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text(error.toString())));
+            }
           },
         ),
       ],
@@ -502,24 +534,32 @@ class _AssignmentCard extends StatefulWidget {
 }
 
 class _AssignmentCardState extends State<_AssignmentCard> {
-  late String _selectedDepartmentId;
-  late String _selectedMentorId;
+  String? _selectedDepartmentId;
+  String? _selectedMentorId;
 
   @override
   void initState() {
     super.initState();
-    _selectedDepartmentId = widget.intern.departmentId;
-    _selectedMentorId = widget.intern.mentorId;
+    _selectedDepartmentId = widget.intern.departmentId.isEmpty
+        ? null
+        : widget.intern.departmentId;
+    _selectedMentorId = widget.intern.mentorId.isEmpty
+        ? null
+        : widget.intern.mentorId;
   }
 
   @override
   void didUpdateWidget(covariant _AssignmentCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.intern.departmentId != widget.intern.departmentId) {
-      _selectedDepartmentId = widget.intern.departmentId;
+      _selectedDepartmentId = widget.intern.departmentId.isEmpty
+          ? null
+          : widget.intern.departmentId;
     }
     if (oldWidget.intern.mentorId != widget.intern.mentorId) {
-      _selectedMentorId = widget.intern.mentorId;
+      _selectedMentorId = widget.intern.mentorId.isEmpty
+          ? null
+          : widget.intern.mentorId;
     }
   }
 
@@ -544,8 +584,9 @@ class _AssignmentCardState extends State<_AssignmentCard> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _selectedDepartmentId,
+            initialValue: _selectedDepartmentId,
             decoration: const InputDecoration(labelText: 'Department'),
+            hint: const Text('Select a department'),
             items: widget.departments
                 .map(
                   (department) => DropdownMenuItem(
@@ -555,9 +596,6 @@ class _AssignmentCardState extends State<_AssignmentCard> {
                 )
                 .toList(),
             onChanged: (value) {
-              if (value == null) {
-                return;
-              }
               setState(() {
                 _selectedDepartmentId = value;
               });
@@ -565,8 +603,9 @@ class _AssignmentCardState extends State<_AssignmentCard> {
           ),
           const SizedBox(height: 14),
           DropdownButtonFormField<String>(
-            value: _selectedMentorId,
+            initialValue: _selectedMentorId,
             decoration: const InputDecoration(labelText: 'Mentor'),
+            hint: const Text('Select a mentor'),
             items: widget.mentors
                 .map(
                   (mentor) => DropdownMenuItem(
@@ -576,9 +615,6 @@ class _AssignmentCardState extends State<_AssignmentCard> {
                 )
                 .toList(),
             onChanged: (value) {
-              if (value == null) {
-                return;
-              }
               setState(() {
                 _selectedMentorId = value;
               });
@@ -588,19 +624,43 @@ class _AssignmentCardState extends State<_AssignmentCard> {
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton(
-              onPressed: () {
-                context.read<AppDataProvider>().assignIntern(
-                  internId: widget.intern.id,
-                  departmentId: _selectedDepartmentId,
-                  mentorId: _selectedMentorId,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Updated assignment for ${widget.intern.name}.',
+              onPressed: () async {
+                if (_selectedDepartmentId == null ||
+                    _selectedMentorId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Please choose both a department and a mentor.',
+                      ),
                     ),
-                  ),
-                );
+                  );
+                  return;
+                }
+
+                try {
+                  await context.read<AppDataProvider>().assignIntern(
+                    internId: widget.intern.id,
+                    departmentId: _selectedDepartmentId!,
+                    mentorId: _selectedMentorId!,
+                  );
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Updated assignment for ${widget.intern.name}.',
+                      ),
+                    ),
+                  );
+                } catch (error) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(error.toString())));
+                }
               },
               child: const Text('Save Assignment'),
             ),
@@ -622,7 +682,7 @@ class _UploadPanel extends StatelessWidget {
   final String buttonLabel;
   final String? selectedFileName;
   final String emptyState;
-  final VoidCallback onPick;
+  final Future<void> Function() onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -638,7 +698,9 @@ class _UploadPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           OutlinedButton.icon(
-            onPressed: onPick,
+            onPressed: () async {
+              await onPick();
+            },
             icon: const Icon(Icons.attach_file_outlined),
             label: Text(buttonLabel),
           ),
@@ -691,7 +753,7 @@ class _PendingRegistrationCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${intern.email} • ${intern.universityId}',
+            '${intern.email} - ${intern.universityId}',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -701,13 +763,25 @@ class _PendingRegistrationCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    context.read<AppDataProvider>().rejectRegistration(
-                      intern.id,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Rejected ${intern.name}.')),
-                    );
+                  onPressed: () async {
+                    try {
+                      await context.read<AppDataProvider>().rejectRegistration(
+                        intern.id,
+                      );
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Rejected ${intern.name}.')),
+                      );
+                    } catch (error) {
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(error.toString())));
+                    }
                   },
                   child: const Text('Reject'),
                 ),
@@ -715,18 +789,66 @@ class _PendingRegistrationCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  onPressed: () {
-                    context.read<AppDataProvider>().approveRegistration(
-                      intern.id,
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Approved ${intern.name}.')),
-                    );
+                  onPressed: () async {
+                    try {
+                      await context.read<AppDataProvider>().approveRegistration(
+                        intern.id,
+                      );
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Approved ${intern.name}.')),
+                      );
+                    } catch (error) {
+                      if (!context.mounted) {
+                        return;
+                      }
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(error.toString())));
+                    }
                   },
                   child: const Text('Approve'),
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardErrorBanner extends StatelessWidget {
+  const _DashboardErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3F2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFDA29B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFB42318)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFFB42318),
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),

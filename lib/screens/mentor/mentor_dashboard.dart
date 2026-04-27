@@ -56,7 +56,14 @@ class _MentorDashboardState extends State<MentorDashboard> {
           child: SingleChildScrollView(
             key: ValueKey(_currentIndex),
             padding: const EdgeInsets.all(20),
-            child: pages[_currentIndex],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (dataProvider.errorMessage != null)
+                  _DashboardErrorBanner(message: dataProvider.errorMessage!),
+                pages[_currentIndex],
+              ],
+            ),
           ),
         ),
       ),
@@ -98,8 +105,12 @@ class _MentorDashboardState extends State<MentorDashboard> {
     );
   }
 
-  void _logout(BuildContext context) {
-    context.read<AuthProvider>().logout();
+  Future<void> _logout(BuildContext context) async {
+    await context.read<AuthProvider>().logout();
+    if (!context.mounted) {
+      return;
+    }
+    context.read<AppDataProvider>().clear();
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 }
@@ -185,7 +196,7 @@ class _AssignedInternList extends StatelessWidget {
         if (interns.isEmpty)
           const _MentorEmptyState(
             title: 'No assigned interns',
-            subtitle: 'Assignments created by the admin will appear here.',
+            subtitle: 'Assignments returned by the backend will appear here.',
           )
         else
           ...interns.map((intern) => _MentorInternCard(intern: intern)),
@@ -249,7 +260,7 @@ class _MentorTrainingFilesScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Pick a supporting file for interns. For now, only the selected file name is stored.',
+          'Pick a supporting file for interns and upload it to the backend.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -275,16 +286,27 @@ class _MentorTrainingFilesScreen extends StatelessWidget {
                     return;
                   }
 
-                  context.read<AppDataProvider>().setMentorTrainingFileName(
-                    result.files.single.name,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Saved ${result.files.single.name} to local mentor state.',
+                  final file = result.files.single;
+                  try {
+                    await context
+                        .read<AppDataProvider>()
+                        .uploadMentorTrainingFile(file);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Uploaded ${file.name} successfully.'),
                       ),
-                    ),
-                  );
+                    );
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(error.toString())));
+                  }
                 },
                 icon: const Icon(Icons.upload_outlined),
                 label: const Text('Select Training File'),
@@ -516,7 +538,7 @@ class _PerformanceFormCardState extends State<_PerformanceFormCard> {
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton(
-              onPressed: () {
+              onPressed: () async {
                 final score = double.tryParse(_scoreController.text.trim());
                 if (score == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -527,18 +549,30 @@ class _PerformanceFormCardState extends State<_PerformanceFormCard> {
                   return;
                 }
 
-                context.read<AppDataProvider>().savePerformanceMark(
-                  internId: widget.intern.id,
-                  score: score,
-                  comment: _commentController.text.trim(),
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Saved performance mark for ${widget.intern.name}.',
+                try {
+                  await context.read<AppDataProvider>().savePerformanceMark(
+                    internId: widget.intern.id,
+                    score: score,
+                    comment: _commentController.text.trim(),
+                  );
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Saved performance mark for ${widget.intern.name}.',
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } catch (error) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(error.toString())));
+                }
               },
               child: const Text('Save Mark'),
             ),
@@ -574,19 +608,72 @@ class _AttendanceCard extends StatelessWidget {
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
-          ...intern.attendance.map(
-            (record) => SwitchListTile(
-              value: record.isPresent,
-              contentPadding: EdgeInsets.zero,
-              title: Text(record.weekLabel),
-              subtitle: Text(record.isPresent ? 'Present' : 'Absent'),
-              onChanged: (value) {
-                context.read<AppDataProvider>().updateAttendance(
-                  internId: intern.id,
-                  weekLabel: record.weekLabel,
-                  isPresent: value,
-                );
-              },
+          if (intern.attendance.isEmpty)
+            Text(
+              'No attendance records returned yet.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
+            )
+          else
+            ...intern.attendance.map(
+              (record) => SwitchListTile(
+                value: record.isPresent,
+                contentPadding: EdgeInsets.zero,
+                title: Text(record.weekLabel),
+                subtitle: Text(record.isPresent ? 'Present' : 'Absent'),
+                onChanged: (value) async {
+                  try {
+                    await context.read<AppDataProvider>().updateAttendance(
+                      internId: intern.id,
+                      weekLabel: record.weekLabel,
+                      isPresent: value,
+                    );
+                  } catch (error) {
+                    if (!context.mounted) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(error.toString())));
+                  }
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardErrorBanner extends StatelessWidget {
+  const _DashboardErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3F2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFDA29B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFB42318)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFFB42318),
+                height: 1.4,
+              ),
             ),
           ),
         ],

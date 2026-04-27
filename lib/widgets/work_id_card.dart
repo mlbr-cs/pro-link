@@ -26,7 +26,7 @@ class WorkIdCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.16),
+            color: Colors.black.withValues(alpha: 0.16),
             blurRadius: 30,
             offset: const Offset(0, 18),
           ),
@@ -41,9 +41,11 @@ class WorkIdCard extends StatelessWidget {
                 width: 58,
                 height: 58,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white.withOpacity(0.18)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: const Icon(
                   Icons.badge_outlined,
@@ -108,9 +110,9 @@ class WorkIdCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
+              color: Colors.white.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withOpacity(0.12)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
             ),
             child: const Text(
               'Official digital identification for internship access, mentor follow-up, and department verification.',

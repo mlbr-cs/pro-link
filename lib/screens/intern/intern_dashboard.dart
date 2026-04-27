@@ -57,7 +57,14 @@ class _InternDashboardState extends State<InternDashboard> {
           child: SingleChildScrollView(
             key: ValueKey(_currentIndex),
             padding: const EdgeInsets.all(20),
-            child: pages[_currentIndex],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (dataProvider.errorMessage != null)
+                  _DashboardErrorBanner(message: dataProvider.errorMessage!),
+                pages[_currentIndex],
+              ],
+            ),
           ),
         ),
       ),
@@ -99,8 +106,12 @@ class _InternDashboardState extends State<InternDashboard> {
     );
   }
 
-  void _logout(BuildContext context) {
-    context.read<AuthProvider>().logout();
+  Future<void> _logout(BuildContext context) async {
+    await context.read<AuthProvider>().logout();
+    if (!context.mounted) {
+      return;
+    }
+    context.read<AppDataProvider>().clear();
     Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
   }
 }
@@ -115,7 +126,7 @@ class _InternOverview extends StatelessWidget {
     if (intern == null) {
       return const _InternEmptyState(
         title: 'No intern profile found',
-        subtitle: 'A matching fake intern account could not be loaded.',
+        subtitle: 'A matching backend intern account could not be loaded.',
       );
     }
 
@@ -159,6 +170,14 @@ class _SkillMarksScreen extends StatelessWidget {
       return const _InternEmptyState(
         title: 'No evaluations available',
         subtitle: 'Skill evaluation data is not available for this account.',
+      );
+    }
+
+    if (intern!.skillEvaluations.isEmpty) {
+      return const _InternEmptyState(
+        title: 'No marks available yet',
+        subtitle:
+            'Evaluation marks will appear here after your mentor submits them.',
       );
     }
 
@@ -240,6 +259,14 @@ class _ScheduleScreen extends StatelessWidget {
       );
     }
 
+    if (intern!.timetable.isEmpty) {
+      return const _InternEmptyState(
+        title: 'No timetable returned yet',
+        subtitle:
+            'Your schedule will appear here once the backend provides timetable data.',
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,7 +278,7 @@ class _ScheduleScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Structured weekly schedule using local placeholder timetable data.',
+          'Structured weekly schedule loaded from the backend.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -305,6 +332,14 @@ class _DocumentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (documents.isEmpty) {
+      return const _InternEmptyState(
+        title: 'No training documents available',
+        subtitle:
+            'Shared training files will appear here when they are returned by the backend.',
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -420,6 +455,42 @@ class _DigitalIdScreen extends StatelessWidget {
           email: intern!.email,
         ),
       ],
+    );
+  }
+}
+
+class _DashboardErrorBanner extends StatelessWidget {
+  const _DashboardErrorBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3F2),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFDA29B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: Color(0xFFB42318)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: const Color(0xFFB42318),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

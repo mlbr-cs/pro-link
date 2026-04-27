@@ -1,5 +1,6 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:pro_link/models/attendance_record.dart';
+import 'package:pro_link/models/app_user.dart';
 import 'package:pro_link/models/department.dart';
 import 'package:pro_link/models/intern.dart';
 import 'package:pro_link/models/mentor_profile.dart';
@@ -11,16 +12,18 @@ class AppDataProvider extends ChangeNotifier {
 
   final ApiService _apiService;
 
-  bool _isInitialized = false;
   bool _isLoading = false;
+  String? _errorMessage;
   List<Intern> _interns = [];
   List<Department> _departments = [];
   List<MentorProfile> _mentors = [];
   List<TrainingDocument> _trainingDocuments = [];
+  List<String> _scheduleFiles = [];
   String? _officeTimetableFileName;
   String? _mentorTrainingFileName;
 
   bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
   String? get officeTimetableFileName => _officeTimetableFileName;
   String? get mentorTrainingFileName => _mentorTrainingFileName;
   List<Intern> get interns => List.unmodifiable(_interns);
@@ -28,6 +31,7 @@ class AppDataProvider extends ChangeNotifier {
   List<MentorProfile> get mentors => List.unmodifiable(_mentors);
   List<TrainingDocument> get trainingDocuments =>
       List.unmodifiable(_trainingDocuments);
+  List<String> get scheduleFiles => List.unmodifiable(_scheduleFiles);
 
   List<Intern> get approvedInterns =>
       _interns.where((intern) => !intern.registrationPending).toList();
@@ -35,21 +39,89 @@ class AppDataProvider extends ChangeNotifier {
   List<Intern> get pendingRegistrations =>
       _interns.where((intern) => intern.registrationPending).toList();
 
-  Future<void> initialize() async {
-    if (_isInitialized) {
-      return;
-    }
+  Future<void> initialize() async {}
 
+  Future<void> loadForRole(UserRole role) async {
+    switch (role) {
+      case UserRole.admin:
+        await loadAdminData();
+        break;
+      case UserRole.mentor:
+        await loadMentorData();
+        break;
+      case UserRole.intern:
+        await loadInternData();
+        break;
+    }
+  }
+
+  Future<void> _perform(Future<void> Function() action) async {
     _isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
-    _departments = await _apiService.getDepartments();
-    _mentors = await _apiService.getMentors();
-    _trainingDocuments = await _apiService.getTrainingDocuments();
-    _interns = List<Intern>.from(await _apiService.getInterns());
+    try {
+      await action();
+    } on Exception catch (error) {
+      _errorMessage = error.toString().replaceFirst('Exception: ', '');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 
-    _isInitialized = true;
-    _isLoading = false;
+  Future<void> loadAdminData() async {
+    await _perform(() async {
+      _interns = await _apiService.getInterns();
+      _departments = await _apiService.getDepartments();
+      _mentors = await _apiService.getMentors();
+      _scheduleFiles = await _apiService.getScheduleFileNames();
+    });
+  }
+
+  Future<void> loadMentorData() async {
+    await _perform(() async {
+      final mentorInterns = await _apiService.getMentorInterns();
+      final attendanceByIntern = await _apiService.getAttendanceByIntern();
+      _interns = mentorInterns
+          .map(
+            (intern) => intern.copyWith(
+              attendance: attendanceByIntern[intern.id] ?? intern.attendance,
+            ),
+          )
+          .toList();
+      _trainingDocuments = await _apiService.getTrainingFiles();
+      _departments = [];
+      _mentors = [];
+      _scheduleFiles = [];
+    });
+  }
+
+  Future<void> loadInternData() async {
+    await _perform(() async {
+      final profile = await _apiService.getInternProfile();
+      final evaluations = await _apiService.getInternEvaluations();
+      final schedule = await _apiService.getInternSchedule();
+      _trainingDocuments = await _apiService.getInternTrainingFiles();
+      _interns = [
+        profile.copyWith(skillEvaluations: evaluations, timetable: schedule),
+      ];
+      _departments = [];
+      _mentors = [];
+      _scheduleFiles = [];
+    });
+  }
+
+  void clear() {
+    _interns = [];
+    _departments = [];
+    _mentors = [];
+    _trainingDocuments = [];
+    _scheduleFiles = [];
+    _officeTimetableFileName = null;
+    _mentorTrainingFileName = null;
+    _errorMessage = null;
     notifyListeners();
   }
 
@@ -64,99 +136,136 @@ class AppDataProvider extends ChangeNotifier {
   }
 
   List<Intern> internsForMentor(String mentorName) {
-    return approvedInterns
-        .where(
-          (intern) =>
-              intern.mentorName.toLowerCase() == mentorName.toLowerCase(),
-        )
-        .toList();
+    return _interns.where((intern) {
+      final currentMentorName = intern.mentorName.trim().toLowerCase();
+      final expectedMentorName = mentorName.trim().toLowerCase();
+      return currentMentorName.isEmpty ||
+          currentMentorName == expectedMentorName;
+    }).toList();
   }
 
-  void assignIntern({
+  Future<void> assignIntern({
     required String internId,
     required String departmentId,
     required String mentorId,
-  }) {
-    final department = _departments.firstWhere(
-      (item) => item.id == departmentId,
-    );
-    final mentor = _mentors.firstWhere((item) => item.id == mentorId);
-    final index = _interns.indexWhere((intern) => intern.id == internId);
-
-    if (index == -1) {
-      return;
-    }
-
-    _interns[index] = _interns[index].copyWith(
-      departmentId: department.id,
-      departmentName: department.name,
-      mentorId: mentor.id,
-      mentorName: mentor.name,
-    );
-    notifyListeners();
+  }) async {
+    await _perform(() async {
+      final updated = await _apiService.assignIntern(
+        internId: internId,
+        departmentId: departmentId,
+        mentorId: mentorId,
+      );
+      final index = _interns.indexWhere((intern) => intern.id == internId);
+      if (index != -1) {
+        _interns[index] = updated;
+      }
+    });
   }
 
-  void approveRegistration(String internId) {
-    final index = _interns.indexWhere((intern) => intern.id == internId);
-    if (index == -1) {
-      return;
-    }
-
-    _interns[index] = _interns[index].copyWith(registrationPending: false);
-    notifyListeners();
+  Future<void> approveRegistration(String internId) async {
+    await _perform(() async {
+      final updated = await _apiService.updateInternStatus(
+        internId: internId,
+        status: 'approved',
+      );
+      final index = _interns.indexWhere((intern) => intern.id == internId);
+      if (index != -1) {
+        _interns[index] = updated.copyWith(registrationPending: false);
+      }
+    });
   }
 
-  void rejectRegistration(String internId) {
-    _interns.removeWhere((intern) => intern.id == internId);
-    notifyListeners();
+  Future<void> rejectRegistration(String internId) async {
+    await _perform(() async {
+      await _apiService.updateInternStatus(
+        internId: internId,
+        status: 'rejected',
+      );
+      _interns.removeWhere((intern) => intern.id == internId);
+    });
   }
 
-  void setOfficeTimetableFileName(String fileName) {
-    _officeTimetableFileName = fileName;
-    notifyListeners();
+  Future<void> uploadOfficeTimetable(PlatformFile file) async {
+    await _perform(() async {
+      final fileName = await _apiService.uploadScheduleFile(file);
+      _officeTimetableFileName = fileName;
+      _scheduleFiles = [
+        fileName,
+        ..._scheduleFiles.where((item) => item != fileName),
+      ];
+    });
   }
 
-  void setMentorTrainingFileName(String fileName) {
-    _mentorTrainingFileName = fileName;
-    notifyListeners();
+  Future<void> uploadMentorTrainingFile(PlatformFile file) async {
+    await _perform(() async {
+      final uploaded = await _apiService.uploadTrainingFile(file);
+      _mentorTrainingFileName = uploaded.fileName;
+      _trainingDocuments = [
+        uploaded,
+        ..._trainingDocuments.where((item) => item.id != uploaded.id),
+      ];
+    });
   }
 
-  void savePerformanceMark({
+  Future<void> savePerformanceMark({
     required String internId,
     required double score,
     required String comment,
-  }) {
-    final index = _interns.indexWhere((intern) => intern.id == internId);
-    if (index == -1) {
-      return;
-    }
+  }) async {
+    await _perform(() async {
+      final index = _interns.indexWhere((intern) => intern.id == internId);
+      if (index == -1) {
+        return;
+      }
 
-    _interns[index] = _interns[index].copyWith(
-      performanceScore: score,
-      performanceComment: comment,
-    );
-    notifyListeners();
+      final currentIntern = _interns[index];
+      final evaluation = currentIntern.performanceId == null
+          ? await _apiService.createEvaluation(
+              internId: internId,
+              score: score,
+              comment: comment,
+            )
+          : await _apiService.updateEvaluation(
+              evaluationId: currentIntern.performanceId!,
+              score: score,
+              comment: comment,
+            );
+
+      _interns[index] = currentIntern.copyWith(
+        performanceId: evaluation.id,
+        performanceScore: evaluation.score,
+        performanceComment: evaluation.feedback,
+      );
+    });
   }
 
-  void updateAttendance({
+  Future<void> updateAttendance({
     required String internId,
     required String weekLabel,
     required bool isPresent,
-  }) {
-    final index = _interns.indexWhere((intern) => intern.id == internId);
-    if (index == -1) {
-      return;
-    }
+  }) async {
+    await _perform(() async {
+      final savedRecord = await _apiService.submitAttendance(
+        internId: internId,
+        weekLabel: weekLabel,
+        isPresent: isPresent,
+      );
+      final index = _interns.indexWhere((intern) => intern.id == internId);
+      if (index == -1) {
+        return;
+      }
 
-    final updatedAttendance = _interns[index].attendance
-        .map(
-          (record) => record.weekLabel == weekLabel
-              ? record.copyWith(isPresent: isPresent)
-              : record,
-        )
-        .toList();
+      final currentAttendance = [..._interns[index].attendance];
+      final recordIndex = currentAttendance.indexWhere(
+        (record) => record.weekLabel == weekLabel,
+      );
+      if (recordIndex == -1) {
+        currentAttendance.add(savedRecord);
+      } else {
+        currentAttendance[recordIndex] = savedRecord;
+      }
 
-    _interns[index] = _interns[index].copyWith(attendance: updatedAttendance);
-    notifyListeners();
+      _interns[index] = _interns[index].copyWith(attendance: currentAttendance);
+    });
   }
 }

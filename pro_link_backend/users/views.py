@@ -12,6 +12,7 @@ from .serializers import (
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
@@ -23,6 +24,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(TokenObtainPairView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     serializer_class = LoginTokenObtainPairSerializer
 
 

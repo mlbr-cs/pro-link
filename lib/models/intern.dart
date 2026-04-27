@@ -1,4 +1,4 @@
-import 'package:pro_link/models/attendance_record.dart';
+﻿import 'package:pro_link/models/attendance_record.dart';
 import 'package:pro_link/models/skill_evaluation.dart';
 import 'package:pro_link/models/timetable_entry.dart';
 
@@ -13,6 +13,7 @@ class Intern {
     required this.mentorId,
     required this.mentorName,
     required this.registrationPending,
+    this.performanceId,
     required this.performanceScore,
     required this.performanceComment,
     required this.skillEvaluations,
@@ -29,11 +30,95 @@ class Intern {
   final String mentorId;
   final String mentorName;
   final bool registrationPending;
+  final String? performanceId;
   final double? performanceScore;
   final String? performanceComment;
   final List<SkillEvaluation> skillEvaluations;
   final List<TimetableEntry> timetable;
   final List<AttendanceRecord> attendance;
+
+  factory Intern.fromJson(Map<String, dynamic> json) {
+    final departmentValue = json['department'];
+    final mentorValue = json['mentor'];
+    final evaluationValue = json['performance_evaluation'] ?? json['evaluation'];
+    final skillsValue = json['skill_evaluations'] ?? json['evaluations'];
+    final attendanceValue = json['attendance'];
+    final scheduleValue = json['schedule'] ?? json['timetable'];
+
+    String departmentId = '';
+    String departmentName = '';
+    if (departmentValue is Map<String, dynamic>) {
+      departmentId = (departmentValue['id'] ?? '').toString();
+      departmentName = (departmentValue['name'] ?? '').toString();
+    } else {
+      departmentName = (departmentValue ?? '').toString();
+    }
+
+    String mentorId = '';
+    String mentorName = '';
+    if (mentorValue is Map<String, dynamic>) {
+      mentorId = (mentorValue['id'] ?? '').toString();
+      mentorName =
+          (mentorValue['full_name'] ?? mentorValue['name'] ?? '').toString();
+    } else {
+      mentorName = (mentorValue ?? '').toString();
+    }
+
+    String? performanceId;
+    double? performanceScore;
+    String? performanceComment;
+    if (evaluationValue is Map<String, dynamic>) {
+      performanceId = evaluationValue['id']?.toString();
+      performanceScore = double.tryParse(
+        (evaluationValue['score'] ?? evaluationValue['mark'] ?? '').toString(),
+      );
+      performanceComment =
+          (evaluationValue['comment'] ?? evaluationValue['feedback'] ?? '')
+              .toString();
+    } else {
+      performanceScore = double.tryParse(
+        (json['performance_score'] ?? json['score'] ?? '').toString(),
+      );
+      final rawComment =
+          (json['performance_comment'] ?? json['comment'] ?? '').toString();
+      performanceComment = rawComment.isEmpty ? null : rawComment;
+    }
+
+    return Intern(
+      id: (json['id'] ?? '').toString(),
+      name: (json['full_name'] ?? json['name'] ?? '').toString(),
+      email: (json['email'] ?? '').toString(),
+      universityId:
+          (json['university_id'] ?? json['student_id'] ?? '').toString(),
+      departmentId: departmentId,
+      departmentName: departmentName,
+      mentorId: mentorId,
+      mentorName: mentorName,
+      registrationPending: (json['registration_pending'] as bool?) ??
+          ((json['status'] ?? '').toString().toLowerCase() == 'pending'),
+      performanceId: performanceId,
+      performanceScore: performanceScore,
+      performanceComment: performanceComment,
+      skillEvaluations: skillsValue is List
+          ? skillsValue
+              .whereType<Map<String, dynamic>>()
+              .map(SkillEvaluation.fromJson)
+              .toList()
+          : const [],
+      timetable: scheduleValue is List
+          ? scheduleValue
+              .whereType<Map<String, dynamic>>()
+              .map(TimetableEntry.fromJson)
+              .toList()
+          : const [],
+      attendance: attendanceValue is List
+          ? attendanceValue
+              .whereType<Map<String, dynamic>>()
+              .map(AttendanceRecord.fromJson)
+              .toList()
+          : const [],
+    );
+  }
 
   Intern copyWith({
     String? id,
@@ -45,6 +130,7 @@ class Intern {
     String? mentorId,
     String? mentorName,
     bool? registrationPending,
+    String? performanceId,
     double? performanceScore,
     String? performanceComment,
     List<SkillEvaluation>? skillEvaluations,
@@ -63,6 +149,7 @@ class Intern {
       mentorId: mentorId ?? this.mentorId,
       mentorName: mentorName ?? this.mentorName,
       registrationPending: registrationPending ?? this.registrationPending,
+      performanceId: performanceId ?? this.performanceId,
       performanceScore: clearPerformanceScore
           ? null
           : performanceScore ?? this.performanceScore,

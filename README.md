@@ -86,3 +86,54 @@ lib/
 ## License
 
 This project is submitted as academic work for Constantine 2 University. All rights reserved by the project team.
+
+---
+
+## Backend Team Setup
+
+The backend authentication foundation for the team now lives in `pro_link_backend/`.
+
+### Backend stack
+- Django REST Framework
+- PostgreSQL
+- JWT with `djangorestframework-simplejwt`
+- `django-cors-headers`
+- `python-decouple`
+
+### Folder
+
+```text
+pro_link_backend/
+├── manage.py
+├── requirements.txt
+├── .env.example
+├── pro_link/
+│   ├── settings.py
+│   └── urls.py
+└── users/
+    ├── models.py
+    ├── serializers.py
+    ├── views.py
+    ├── urls.py
+    └── permissions.py
+```
+
+### Team workflow
+- The `users` app owns authentication and the custom `User` model.
+- Other backend teammates should import role guards from `users/permissions.py`.
+- Interns and mentors apps should use `settings.AUTH_USER_MODEL` for any user relation.
+- Auth routes are mounted under `/api/auth/`.
+
+### Setup
+1. Create a virtual environment inside `pro_link_backend/`.
+2. Install packages from `requirements.txt`.
+3. Copy `.env.example` to `.env` and update `SECRET_KEY`, `DEBUG`, and `DATABASE_URL`.
+4. Run `python manage.py makemigrations users`.
+5. Run `python manage.py migrate`.
+6. Start the server with `python manage.py runserver`.
+
+### Available auth endpoints
+- `POST /api/auth/register/`
+- `POST /api/auth/login/`
+- `GET /api/auth/me/`
+- `POST /api/auth/token/refresh/`

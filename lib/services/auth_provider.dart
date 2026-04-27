@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:pro_link/models/app_user.dart';
 import 'package:pro_link/services/api_service.dart';
 
@@ -30,8 +30,9 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void logout() {
+  Future<void> logout() async {
     _currentUser = null;
+    await _apiService.clearSession();
     notifyListeners();
   }
 }
