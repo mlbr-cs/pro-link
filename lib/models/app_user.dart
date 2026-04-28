@@ -24,7 +24,10 @@ class AppUser {
       email: (json['email'] ?? '').toString(),
       department: (json['department'] ?? '').toString(),
       role: _roleFromString((json['role'] ?? '').toString()),
-      photoUrl: json['photo']?.toString(),
+      photoUrl:
+          (json['photo_url'] ?? json['photo'] ?? json['avatar'] ?? '').toString().isEmpty
+              ? null
+              : (json['photo_url'] ?? json['photo'] ?? json['avatar']).toString(),
     );
   }
 

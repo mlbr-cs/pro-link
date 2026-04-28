@@ -12,7 +12,7 @@ class Intern {
     required this.departmentName,
     required this.mentorId,
     required this.mentorName,
-    required this.registrationPending,
+    required this.status,
     this.performanceId,
     required this.performanceScore,
     required this.performanceComment,
@@ -29,13 +29,17 @@ class Intern {
   final String departmentName;
   final String mentorId;
   final String mentorName;
-  final bool registrationPending;
+  final String status;
   final String? performanceId;
   final double? performanceScore;
   final String? performanceComment;
   final List<SkillEvaluation> skillEvaluations;
   final List<TimetableEntry> timetable;
   final List<AttendanceRecord> attendance;
+
+  bool get isPending => status.toLowerCase() == 'pending';
+  bool get isApproved => status.toLowerCase() == 'approved';
+  bool get isRejected => status.toLowerCase() == 'rejected';
 
   factory Intern.fromJson(Map<String, dynamic> json) {
     final departmentValue = json['department'];
@@ -94,8 +98,7 @@ class Intern {
       departmentName: departmentName,
       mentorId: mentorId,
       mentorName: mentorName,
-      registrationPending: (json['registration_pending'] as bool?) ??
-          ((json['status'] ?? '').toString().toLowerCase() == 'pending'),
+      status: (json['status'] ?? '').toString(),
       performanceId: performanceId,
       performanceScore: performanceScore,
       performanceComment: performanceComment,
@@ -129,7 +132,7 @@ class Intern {
     String? departmentName,
     String? mentorId,
     String? mentorName,
-    bool? registrationPending,
+    String? status,
     String? performanceId,
     double? performanceScore,
     String? performanceComment,
@@ -148,7 +151,7 @@ class Intern {
       departmentName: departmentName ?? this.departmentName,
       mentorId: mentorId ?? this.mentorId,
       mentorName: mentorName ?? this.mentorName,
-      registrationPending: registrationPending ?? this.registrationPending,
+      status: status ?? this.status,
       performanceId: performanceId ?? this.performanceId,
       performanceScore: clearPerformanceScore
           ? null

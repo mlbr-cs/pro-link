@@ -215,6 +215,66 @@ class ApiService {
     _throwForResponse(response, 'Failed to load interns.');
   }
 
+  Future<List<AppUser>> getPendingUsers() async {
+    final url = '$baseUrl/api/pending-users/';
+    print('Calling: $url');
+
+    final response = await _client.get(
+      Uri.parse(url),
+      headers: await _headers(),
+    );
+
+    print('Status: ${response.statusCode}');
+    print('Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return _decodeListResponse(response.body)
+          .whereType<Map<String, dynamic>>()
+          .map(AppUser.fromJson)
+          .toList();
+    }
+
+    _throwForResponse(response, 'Failed to load pending users.');
+  }
+
+  Future<AppUser> approveUser(String userId) async {
+    final url = '$baseUrl/api/approve-user/$userId/';
+    print('Calling: $url');
+
+    final response = await _client.post(
+      Uri.parse(url),
+      headers: await _headers(),
+    );
+
+    print('Status: ${response.statusCode}');
+    print('Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return AppUser.fromJson(_decodeMapResponse(response.body));
+    }
+
+    _throwForResponse(response, 'Failed to approve user.');
+  }
+
+  Future<AppUser> rejectUser(String userId) async {
+    final url = '$baseUrl/api/reject-user/$userId/';
+    print('Calling: $url');
+
+    final response = await _client.post(
+      Uri.parse(url),
+      headers: await _headers(),
+    );
+
+    print('Status: ${response.statusCode}');
+    print('Response: ${response.body}');
+
+    if (response.statusCode == 200) {
+      return AppUser.fromJson(_decodeMapResponse(response.body));
+    }
+
+    _throwForResponse(response, 'Failed to reject user.');
+  }
+
   Future<Intern> updateInternStatus({
     required String internId,
     required String status,

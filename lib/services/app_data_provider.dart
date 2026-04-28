@@ -21,6 +21,7 @@ class AppDataProvider extends ChangeNotifier {
   List<String> _scheduleFiles = [];
   String? _officeTimetableFileName;
   String? _mentorTrainingFileName;
+  List<AppUser> _pendingUsers = [];
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -32,12 +33,12 @@ class AppDataProvider extends ChangeNotifier {
   List<TrainingDocument> get trainingDocuments =>
       List.unmodifiable(_trainingDocuments);
   List<String> get scheduleFiles => List.unmodifiable(_scheduleFiles);
+  List<AppUser> get pendingUsers => List.unmodifiable(_pendingUsers);
 
   List<Intern> get approvedInterns =>
-      _interns.where((intern) => !intern.registrationPending).toList();
+      _interns.where((intern) => intern.isApproved).toList();
 
-  List<Intern> get pendingRegistrations =>
-      _interns.where((intern) => intern.registrationPending).toList();
+  List<AppUser> get pendingRegistrations => pendingUsers;
 
   Future<void> initialize() async {}
 
@@ -77,6 +78,7 @@ class AppDataProvider extends ChangeNotifier {
       _departments = await _apiService.getDepartments();
       _mentors = await _apiService.getMentors();
       _scheduleFiles = await _apiService.getScheduleFileNames();
+      _pendingUsers = await _apiService.getPendingUsers();
     });
   }
 
@@ -121,6 +123,7 @@ class AppDataProvider extends ChangeNotifier {
     _scheduleFiles = [];
     _officeTimetableFileName = null;
     _mentorTrainingFileName = null;
+    _pendingUsers = [];
     _errorMessage = null;
     notifyListeners();
   }
@@ -162,26 +165,20 @@ class AppDataProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> approveRegistration(String internId) async {
+  Future<void> approveRegistration(String userId) async {
     await _perform(() async {
-      final updated = await _apiService.updateInternStatus(
-        internId: internId,
-        status: 'approved',
-      );
-      final index = _interns.indexWhere((intern) => intern.id == internId);
-      if (index != -1) {
-        _interns[index] = updated.copyWith(registrationPending: false);
-      }
+      await _apiService.approveUser(userId);
+      _pendingUsers.removeWhere((user) => user.id == userId);
+      // Refresh interns list so "Interns" and "Assign" reflect approvals.
+      _interns = await _apiService.getInterns();
     });
   }
 
-  Future<void> rejectRegistration(String internId) async {
+  Future<void> rejectRegistration(String userId) async {
     await _perform(() async {
-      await _apiService.updateInternStatus(
-        internId: internId,
-        status: 'rejected',
-      );
-      _interns.removeWhere((intern) => intern.id == internId);
+      await _apiService.rejectUser(userId);
+      _pendingUsers.removeWhere((user) => user.id == userId);
+      _interns = await _apiService.getInterns();
     });
   }
 

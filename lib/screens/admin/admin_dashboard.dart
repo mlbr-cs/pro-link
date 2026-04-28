@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:pro_link/models/department.dart';
+import 'package:pro_link/models/app_user.dart';
 import 'package:pro_link/models/intern.dart';
 import 'package:pro_link/models/mentor_profile.dart';
 import 'package:pro_link/services/app_data_provider.dart';
@@ -351,7 +352,7 @@ class _OfficeTimetableScreen extends StatelessWidget {
 class _PendingRegistrationsScreen extends StatelessWidget {
   const _PendingRegistrationsScreen({required this.interns});
 
-  final List<Intern> interns;
+  final List<AppUser> interns;
 
   @override
   Widget build(BuildContext context) {
@@ -491,7 +492,11 @@ class _DirectoryCard extends StatelessWidget {
                 ),
               ),
               _StatusBadge(
-                label: intern.registrationPending ? 'Pending' : 'Approved',
+                label: intern.isPending
+                    ? 'Pending'
+                    : intern.isRejected
+                    ? 'Rejected'
+                    : 'Approved',
               ),
             ],
           ),
@@ -730,7 +735,7 @@ class _UploadPanel extends StatelessWidget {
 class _PendingRegistrationCard extends StatelessWidget {
   const _PendingRegistrationCard({required this.intern});
 
-  final Intern intern;
+  final AppUser intern;
 
   @override
   Widget build(BuildContext context) {
@@ -753,7 +758,7 @@ class _PendingRegistrationCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${intern.email} - ${intern.universityId}',
+            intern.email,
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),

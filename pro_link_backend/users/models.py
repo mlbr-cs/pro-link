@@ -25,6 +25,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', False)
         extra_fields.setdefault('is_superuser', False)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_approved', False)
         extra_fields.setdefault('role', UserRole.INTERN)
         return self._create_user(email, password, **extra_fields)
 
@@ -32,6 +33,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_approved', True)
         extra_fields.setdefault('role', UserRole.ADMIN)
 
         if extra_fields.get('is_staff') is not True:
@@ -49,6 +51,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     photo = models.ImageField(upload_to='user_photos/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Registration approval workflow
+    is_approved = models.BooleanField(default=False)
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
@@ -56,6 +61,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['full_name']
+
+    def save(self, *args, **kwargs):
+        # Staff/superusers must never be blocked by the approval workflow.
+        if self.is_staff or self.is_superuser:
+            self.is_approved = True
+            self.is_active = True
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.email

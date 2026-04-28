@@ -8,14 +8,27 @@ from .models import User
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     ordering = ('id',)
-    list_display = ('id', 'email', 'full_name', 'role', 'is_staff', 'is_active', 'created_at')
-    list_filter = ('role', 'is_staff', 'is_active')
+    list_display = (
+        'id',
+        'email',
+        'full_name',
+        'role',
+        'is_staff',
+        'is_superuser',
+        'is_approved',
+        'is_active',
+        'created_at',
+    )
+    list_filter = ('role', 'is_staff', 'is_superuser', 'is_approved', 'is_active')
     search_fields = ('email', 'full_name')
 
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
         ('Profile', {'fields': ('full_name', 'role', 'photo', 'created_at')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        (
+            'Permissions',
+            {'fields': ('is_approved', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')},
+        ),
     )
     readonly_fields = ('created_at',)
 
@@ -24,7 +37,16 @@ class UserAdmin(DjangoUserAdmin):
             None,
             {
                 'classes': ('wide',),
-                'fields': ('email', 'full_name', 'role', 'password1', 'password2', 'is_staff', 'is_active'),
+                'fields': (
+                    'email',
+                    'full_name',
+                    'role',
+                    'password1',
+                    'password2',
+                    'is_approved',
+                    'is_staff',
+                    'is_active',
+                ),
             },
         ),
     )
