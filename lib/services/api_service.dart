@@ -168,23 +168,33 @@ class ApiService {
     required String email,
     required String password,
     required String role,
+    String? universityId,
+    PlatformFile? photo,
   }) async {
-    final response = await _client.post(
-      Uri.parse('$baseUrl/api/auth/register/'),
-      headers: await _headers(),
-      body: jsonEncode({
-        'email': email.trim(),
-        'password': password,
-        'full_name': fullName.trim(),
-        'role': role,
-      }),
+    final data = FormData.fromMap({
+      'email': email.trim(),
+      'password': password,
+      'full_name': fullName.trim(),
+      'role': role,
+      if (universityId != null) 'university_id': universityId.trim(),
+      if (photo?.path != null)
+        'photo': await MultipartFile.fromFile(
+          photo!.path!,
+          filename: photo.name,
+        ),
+    });
+
+    final response = await _dio.post(
+      '/api/auth/register/',
+      data: data,
+      options: Options(headers: {'Accept': 'application/json'}),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return;
     }
 
-    _throwForResponse(response, 'Registration failed.');
+    throw const ApiException('Registration failed.');
   }
 
   Future<AppUser> getCurrentUser() async {

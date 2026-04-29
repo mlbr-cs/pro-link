@@ -8,6 +8,7 @@ class Command(BaseCommand):
 
     DEFAULTS = [
         ("Computer Science", "Computer science department."),
+        ("Computer Security", "Computer security / cybersecurity department."),
         ("Information Systems", "Information systems department."),
         ("Software Engineering", "Software engineering department."),
         ("Networks", "Networks and systems department."),

@@ -6,11 +6,13 @@ class WorkIdCard extends StatelessWidget {
     required this.name,
     required this.department,
     required this.email,
+    this.photoUrl,
   });
 
   final String name;
   final String department;
   final String email;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -75,10 +77,23 @@ class WorkIdCard extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(22),
                 ),
-                child: const Icon(
-                  Icons.person_outline,
-                  size: 42,
-                  color: Color(0xFF14213D),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: photoUrl == null || photoUrl!.isEmpty
+                      ? const Icon(
+                          Icons.person_outline,
+                          size: 42,
+                          color: Color(0xFF14213D),
+                        )
+                      : Image.network(
+                          photoUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(
+                            Icons.person_outline,
+                            size: 42,
+                            color: Color(0xFF14213D),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: 18),

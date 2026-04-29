@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:pro_link/services/api_service.dart';
 
@@ -15,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
+  final _universityIdController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -22,11 +24,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isSubmitting = false;
   String _selectedRole = 'intern';
+  PlatformFile? _selectedPhoto;
 
   @override
   void dispose() {
     _fullNameController.dispose();
     _emailController.dispose();
+    _universityIdController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -47,6 +51,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: _emailController.text,
         password: _passwordController.text,
         role: _selectedRole,
+        universityId: _selectedRole == 'intern'
+            ? _universityIdController.text.trim()
+            : null,
+        photo: _selectedPhoto,
       );
 
       if (!mounted) {
@@ -199,6 +207,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   _selectedRole = value;
                                 });
                               },
+                      ),
+                      if (_selectedRole == 'intern') ...[
+                        const SizedBox(height: 18),
+                        TextFormField(
+                          controller: _universityIdController,
+                          decoration: _inputDecoration(
+                            label: 'University ID',
+                            hint: 'Enter your university ID',
+                            icon: Icons.school_outlined,
+                          ),
+                          validator: (value) {
+                            if (_selectedRole != 'intern') {
+                              return null;
+                            }
+                            if (value == null || value.trim().isEmpty) {
+                              return 'University ID is required for interns.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      OutlinedButton.icon(
+                        onPressed: _isSubmitting
+                            ? null
+                            : () async {
+                                final result = await FilePicker.platform.pickFiles(
+                                  // Some Android emulators don't show anything for "Images"
+                                  // if MediaStore has no indexed images. Allow any file so the
+                                  // user can browse to Download/ and pick a JPG manually.
+                                  type: FileType.any,
+                                  dialogTitle: 'Select profile photo',
+                                );
+                                if (!mounted ||
+                                    result == null ||
+                                    result.files.isEmpty) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'No photo selected. If the picker looks empty on the emulator, first add an image to the emulator storage (e.g. Download) or use a real device.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  return;
+                                }
+                                final picked = result.files.single;
+                                final ext =
+                                    (picked.extension ?? '').toLowerCase().trim();
+                                const allowed = {'png', 'jpg', 'jpeg', 'webp'};
+                                if (ext.isEmpty || !allowed.contains(ext)) {
+                                  if (!mounted) {
+                                    return;
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please select an image file (png/jpg/jpeg/webp).',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                setState(() => _selectedPhoto = picked);
+                              },
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        label: Text(
+                          _selectedPhoto == null
+                              ? 'Select Profile Photo (optional)'
+                              : 'Photo: ${_selectedPhoto!.name}',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'If the picker is empty on the emulator: upload/copy an image into the emulator (Download folder), then try again.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: const Color(0xFF667085),
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 18),
                       TextFormField(

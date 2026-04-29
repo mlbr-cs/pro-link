@@ -47,7 +47,11 @@ class EvaluationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         mentor = Mentor.objects.filter(user=self.request.user).first()
         if mentor is None:
-            return serializer.save()
+            from rest_framework import serializers as drf_serializers
+
+            raise drf_serializers.ValidationError(
+                {'mentor': 'Mentor profile not found for this account.'}
+            )
         serializer.save(mentor=mentor)
 
     def partial_update(self, request, *args, **kwargs):

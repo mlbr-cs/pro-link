@@ -588,8 +588,20 @@ class _AttendanceCard extends StatelessWidget {
 
   final Intern intern;
 
+  List<String> _defaultWeeks() {
+    return List<String>.generate(8, (index) => 'Week ${index + 1}');
+  }
+
   @override
   Widget build(BuildContext context) {
+    final existingByWeek = <String, bool>{};
+    for (final record in intern.attendance) {
+      existingByWeek[record.weekLabel] = record.isPresent;
+    }
+    final weeks = intern.attendance.isEmpty
+        ? _defaultWeeks()
+        : intern.attendance.map((r) => r.weekLabel).toList();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
@@ -610,36 +622,37 @@ class _AttendanceCard extends StatelessWidget {
           const SizedBox(height: 14),
           if (intern.attendance.isEmpty)
             Text(
-              'No attendance records returned yet.',
+              'No attendance records yet. Toggle weeks below to create them.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
-            )
-          else
-            ...intern.attendance.map(
-              (record) => SwitchListTile(
-                value: record.isPresent,
-                contentPadding: EdgeInsets.zero,
-                title: Text(record.weekLabel),
-                subtitle: Text(record.isPresent ? 'Present' : 'Absent'),
-                onChanged: (value) async {
-                  try {
-                    await context.read<AppDataProvider>().updateAttendance(
-                      internId: intern.id,
-                      weekLabel: record.weekLabel,
-                      isPresent: value,
-                    );
-                  } catch (error) {
-                    if (!context.mounted) {
-                      return;
-                    }
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(error.toString())));
-                  }
-                },
-              ),
             ),
+          const SizedBox(height: 8),
+          ...weeks.map((weekLabel) {
+            final currentValue = existingByWeek[weekLabel] ?? false;
+            return SwitchListTile(
+              value: currentValue,
+              contentPadding: EdgeInsets.zero,
+              title: Text(weekLabel),
+              subtitle: Text(currentValue ? 'Present' : 'Absent'),
+              onChanged: (value) async {
+                try {
+                  await context.read<AppDataProvider>().updateAttendance(
+                    internId: intern.id,
+                    weekLabel: weekLabel,
+                    isPresent: value,
+                  );
+                } catch (error) {
+                  if (!context.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(error.toString())));
+                }
+              },
+            );
+          }),
         ],
       ),
     );

@@ -36,13 +36,15 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
     role = serializers.ChoiceField(choices=UserRole.choices, required=False)
+    university_id = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'full_name', 'role', 'photo')
+        fields = ('email', 'password', 'full_name', 'role', 'photo', 'university_id')
 
     def create(self, validated_data):
         password = validated_data.pop('password')
+        university_id = validated_data.pop('university_id', '')
         user = User.objects.create_user(password=password, **validated_data)
 
         # Only non-admin accounts go through approval workflow.
@@ -54,10 +56,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Ensure a role-specific profile exists so admin screens (interns/assign)
         # can load data immediately.
         if user.role == UserRole.INTERN:
-            Intern.objects.get_or_create(
+            intern, _ = Intern.objects.get_or_create(
                 user=user,
                 defaults={'status': InternStatus.PENDING},
             )
+            if university_id:
+                intern.university_id = university_id
+                intern.save(update_fields=['university_id'])
         elif user.role == UserRole.MENTOR:
             Mentor.objects.get_or_create(user=user)
 

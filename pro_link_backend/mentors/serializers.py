@@ -17,16 +17,32 @@ class MentorSerializer(serializers.ModelSerializer):
 
 
 class EvaluationSerializer(serializers.ModelSerializer):
+    mentor = serializers.PrimaryKeyRelatedField(read_only=True)
+
     class Meta:
         model = Evaluation
         fields = ('id', 'intern', 'mentor', 'score', 'comment', 'created_at')
         read_only_fields = ('created_at',)
 
+    def validate_score(self, value):
+        try:
+            score = float(value)
+        except Exception:
+            raise serializers.ValidationError('Score must be a number.')
+        if score < 0 or score > 20:
+            raise serializers.ValidationError('Score must be between 0 and 20.')
+        return value
+
 
 class EvaluationInlineSerializer(serializers.ModelSerializer):
+    title = serializers.SerializerMethodField()
+
     class Meta:
         model = Evaluation
-        fields = ('id', 'score', 'comment', 'created_at')
+        fields = ('id', 'title', 'score', 'comment', 'created_at')
+
+    def get_title(self, obj: Evaluation):
+        return 'Performance Mark'
 
 
 class TrainingFileSerializer(serializers.ModelSerializer):

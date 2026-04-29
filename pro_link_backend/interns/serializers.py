@@ -32,6 +32,7 @@ class InternSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     mentor = serializers.SerializerMethodField()
     registration_pending = serializers.SerializerMethodField()
+    performance_evaluation = serializers.SerializerMethodField()
 
     department_id = serializers.PrimaryKeyRelatedField(
         source='department',
@@ -69,6 +70,7 @@ class InternSerializer(serializers.ModelSerializer):
             'mentor_id',
             'status',
             'registration_pending',
+            'performance_evaluation',
             'work_id_number',
             'created_at',
         )
@@ -91,10 +93,30 @@ class InternSerializer(serializers.ModelSerializer):
             else None,
         }
 
+    def get_performance_evaluation(self, obj: Intern):
+        # Return the latest evaluation (if any) so Flutter can display "Current mark"
+        # and prefill mentor edit forms.
+        try:
+            from mentors.models import Evaluation
+        except Exception:
+            return None
+
+        evaluation = (
+            Evaluation.objects.filter(intern_id=obj.id).order_by('-created_at').first()
+        )
+        if evaluation is None:
+            return None
+        return {
+            'id': evaluation.id,
+            'score': evaluation.score,
+            'comment': evaluation.comment,
+            'created_at': evaluation.created_at,
+        }
+
 
 class AttendanceSerializer(serializers.ModelSerializer):
-    week_label = serializers.CharField(source='week', read_only=True)
-    is_present = serializers.SerializerMethodField()
+    week_label = serializers.CharField(source='week', required=False)
+    is_present = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = Attendance
@@ -109,8 +131,23 @@ class AttendanceSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('created_at',)
 
-    def get_is_present(self, obj: Attendance) -> bool:
-        return (obj.status or '').lower() == 'present'
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['is_present'] = (getattr(instance, 'status', '') or '').lower() == 'present'
+        return data
+
+    def validate(self, attrs):
+        # Support Flutter payload:
+        # { intern, week_label, is_present }
+        if 'week' not in attrs and 'week_label' in self.initial_data:
+            attrs['week'] = self.initial_data.get('week_label')
+
+        if 'status' not in attrs and 'is_present' in self.initial_data:
+            is_present = self.initial_data.get('is_present')
+            if isinstance(is_present, str):
+                is_present = is_present.lower() in ('1', 'true', 'yes', 'y')
+            attrs['status'] = 'present' if is_present else 'absent'
+        return attrs
 
 
 class ScheduleSerializer(serializers.ModelSerializer):

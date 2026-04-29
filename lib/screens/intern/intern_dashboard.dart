@@ -36,7 +36,7 @@ class _InternDashboardState extends State<InternDashboard> {
       _SkillMarksScreen(intern: intern),
       _ScheduleScreen(intern: intern),
       _DocumentsScreen(documents: dataProvider.trainingDocuments),
-      _DigitalIdScreen(intern: intern),
+      _DigitalIdScreen(intern: intern, photoUrl: currentUser?.photoUrl),
     ];
 
     return Scaffold(
@@ -419,9 +419,10 @@ class _DocumentsScreen extends StatelessWidget {
 }
 
 class _DigitalIdScreen extends StatelessWidget {
-  const _DigitalIdScreen({required this.intern});
+  const _DigitalIdScreen({required this.intern, this.photoUrl});
 
   final Intern? intern;
+  final String? photoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -453,6 +454,7 @@ class _DigitalIdScreen extends StatelessWidget {
           name: intern!.name,
           department: intern!.departmentName,
           email: intern!.email,
+          photoUrl: photoUrl,
         ),
       ],
     );
