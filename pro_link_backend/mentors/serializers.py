@@ -46,6 +46,8 @@ class EvaluationInlineSerializer(serializers.ModelSerializer):
 
 
 class TrainingFileSerializer(serializers.ModelSerializer):
+    mentor = serializers.PrimaryKeyRelatedField(read_only=True)
+    file_name = serializers.CharField(read_only=True)
     file_url = serializers.SerializerMethodField()
     download_url = serializers.SerializerMethodField()
     category = serializers.SerializerMethodField()

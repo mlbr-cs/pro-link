@@ -105,13 +105,13 @@ class AppDataProvider extends ChangeNotifier {
       final profile = await _apiService.getInternProfile();
       final evaluations = await _apiService.getInternEvaluations();
       final schedule = await _apiService.getInternSchedule();
+      _scheduleFiles = await _apiService.getScheduleFileNames();
       _trainingDocuments = await _apiService.getInternTrainingFiles();
       _interns = [
         profile.copyWith(skillEvaluations: evaluations, timetable: schedule),
       ];
       _departments = [];
       _mentors = [];
-      _scheduleFiles = [];
     });
   }
 

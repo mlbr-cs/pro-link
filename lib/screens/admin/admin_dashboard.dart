@@ -320,7 +320,7 @@ class _OfficeTimetableScreen extends StatelessWidget {
           selectedFileName: selectedFileName,
           emptyState: 'No office timetable selected yet.',
           onPick: () async {
-            final result = await FilePicker.platform.pickFiles();
+            final result = await FilePicker.platform.pickFiles(withData: true);
             if (!context.mounted || result == null || result.files.isEmpty) {
               return;
             }

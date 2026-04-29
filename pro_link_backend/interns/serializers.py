@@ -4,7 +4,7 @@ from rest_framework import serializers
 from mentors.models import Mentor
 from users.serializers import UserSerializer
 
-from .models import Attendance, Department, Intern, Schedule
+from .models import Attendance, Department, Intern, Schedule, ScheduleFile
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -130,6 +130,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             'created_at',
         )
         read_only_fields = ('created_at',)
+        validators = []
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -172,6 +173,41 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
     def get_end_slot(self, obj: Schedule) -> str:
         return obj.end_time.strftime('%H:%M')
+
+
+class ScheduleFileSerializer(serializers.ModelSerializer):
+    file_name = serializers.CharField(read_only=True)
+    file_url = serializers.SerializerMethodField()
+    download_url = serializers.SerializerMethodField()
+    name = serializers.CharField(source='file_name', read_only=True)
+
+    class Meta:
+        model = ScheduleFile
+        fields = (
+            'id',
+            'file_name',
+            'name',
+            'file_url',
+            'download_url',
+            'uploaded_at',
+            'file',
+        )
+        extra_kwargs = {'file': {'write_only': True}}
+
+    def get_file_url(self, obj: ScheduleFile):
+        request = self.context.get('request')
+        if request is None:
+            return obj.file_url
+        return request.build_absolute_uri(obj.file_url)
+
+    def get_download_url(self, obj: ScheduleFile):
+        return self.get_file_url(obj)
+
+    def create(self, validated_data):
+        uploaded = validated_data.get('file')
+        if uploaded is not None and not validated_data.get('file_name'):
+            validated_data['file_name'] = getattr(uploaded, 'name', 'file')
+        return super().create(validated_data)
 
 
 class InternProfileSerializer(serializers.ModelSerializer):

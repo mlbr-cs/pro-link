@@ -1,19 +1,18 @@
 from collections import defaultdict
 
-from django.db.models import Prefetch
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from users.models import UserRole
 
-from .models import Attendance, Department, Intern, InternStatus, Schedule
+from .models import Attendance, Department, Intern, InternStatus, Schedule, ScheduleFile
 from .serializers import (
     AttendanceSerializer,
     DepartmentSerializer,
     InternProfileSerializer,
     InternSerializer,
-    ScheduleSerializer,
+    ScheduleFileSerializer,
 )
 
 
@@ -80,10 +79,15 @@ class DepartmentListView(generics.ListAPIView):
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):
-    queryset = Schedule.objects.select_related('department')
-    serializer_class = ScheduleSerializer
+    queryset = ScheduleFile.objects.all()
+    serializer_class = ScheduleFileSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx['request'] = self.request
+        return ctx
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):
@@ -91,6 +95,54 @@ class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
     permission_classes = [permissions.IsAuthenticated]
     http_method_names = ['get', 'post', 'head', 'options']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        role = getattr(self.request.user, 'role', None)
+        if role == UserRole.ADMIN:
+            return qs
+        if role == UserRole.MENTOR:
+            return qs.filter(intern__mentor__user=self.request.user)
+        if role == UserRole.INTERN:
+            return qs.filter(intern__user=self.request.user)
+        return qs.none()
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        if not data.get('week') and data.get('week_label'):
+            data['week'] = data.get('week_label')
+        if not data.get('status') and 'is_present' in data:
+            is_present = data.get('is_present')
+            if isinstance(is_present, str):
+                is_present = is_present.lower() in ('1', 'true', 'yes', 'y')
+            data['status'] = 'present' if is_present else 'absent'
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        intern = serializer.validated_data['intern']
+
+        role = getattr(request.user, 'role', None)
+        if (
+            role == UserRole.MENTOR
+            and getattr(intern.mentor, 'user_id', None) != request.user.id
+        ):
+            return Response(
+                {'detail': 'You can only update attendance for your assigned interns.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        if role == UserRole.INTERN:
+            return Response(
+                {'detail': 'Interns cannot update attendance.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        attendance, created = Attendance.objects.update_or_create(
+            intern=intern,
+            week=serializer.validated_data['week'],
+            defaults={'status': serializer.validated_data['status']},
+        )
+        response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        return Response(self.get_serializer(attendance).data, status=response_status)
 
 
 class InternProfileView(generics.RetrieveAPIView):

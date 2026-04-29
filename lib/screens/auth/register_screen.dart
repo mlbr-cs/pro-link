@@ -238,6 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   // if MediaStore has no indexed images. Allow any file so the
                                   // user can browse to Download/ and pick a JPG manually.
                                   type: FileType.any,
+                                  withData: true,
                                   dialogTitle: 'Select profile photo',
                                 );
                                 if (!mounted ||

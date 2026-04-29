@@ -76,6 +76,16 @@ class ApiService {
     return headers;
   }
 
+  Future<MultipartFile> _multipartFromPlatformFile(PlatformFile file) async {
+    if (file.path != null) {
+      return MultipartFile.fromFile(file.path!, filename: file.name);
+    }
+    if (file.bytes != null) {
+      return MultipartFile.fromBytes(file.bytes!, filename: file.name);
+    }
+    throw ApiException('Selected file "${file.name}" could not be read.');
+  }
+
   List<dynamic> _decodeListResponse(String body) {
     final decoded = jsonDecode(body);
     if (decoded is List) {
@@ -99,6 +109,33 @@ class ApiService {
       return decoded;
     }
     return <String, dynamic>{};
+  }
+
+  Never _throwForDioException(DioException error, String fallbackMessage) {
+    final response = error.response;
+    var message = fallbackMessage;
+    final data = response?.data;
+
+    if (data is Map) {
+      final detail = data['detail'] ?? data['message'] ?? data['error'];
+      if (detail != null) {
+        message = detail.toString();
+      } else if (data.isNotEmpty) {
+        message = data.entries
+            .map((entry) {
+              final value = entry.value;
+              if (value is List) {
+                return '${entry.key}: ${value.join(', ')}';
+              }
+              return '${entry.key}: $value';
+            })
+            .join('\n');
+      }
+    } else if (data is String && data.trim().isNotEmpty) {
+      message = data.trim();
+    }
+
+    throw ApiException(message, statusCode: response?.statusCode);
   }
 
   Never _throwForResponse(http.Response response, String fallbackMessage) {
@@ -177,11 +214,7 @@ class ApiService {
       'full_name': fullName.trim(),
       'role': role,
       if (universityId != null) 'university_id': universityId.trim(),
-      if (photo?.path != null)
-        'photo': await MultipartFile.fromFile(
-          photo!.path!,
-          filename: photo.name,
-        ),
+      if (photo != null) 'photo': await _multipartFromPlatformFile(photo),
     });
 
     final response = await _dio.post(
@@ -321,25 +354,25 @@ class ApiService {
   }
 
   Future<String> uploadScheduleFile(PlatformFile file) async {
-    if (file.path == null) {
-      throw const ApiException(
-        'Selected schedule file is missing a valid path.',
-      );
-    }
-
     final token = await _getToken();
-    final response = await _dio.post(
-      '/api/schedules/',
-      data: FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path!, filename: file.name),
-      }),
-      options: Options(
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
-      ),
-    );
+    late final Response<dynamic> response;
+    try {
+      response = await _dio.post(
+        '/api/schedules/',
+        data: FormData.fromMap({
+          'file': await _multipartFromPlatformFile(file),
+        }),
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+    } on DioException catch (error) {
+      _throwForDioException(error, 'Failed to upload office timetable.');
+    }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = response.data;
@@ -512,25 +545,25 @@ class ApiService {
   }
 
   Future<TrainingDocument> uploadTrainingFile(PlatformFile file) async {
-    if (file.path == null) {
-      throw const ApiException(
-        'Selected training file is missing a valid path.',
-      );
-    }
-
     final token = await _getToken();
-    final response = await _dio.post(
-      '/api/training-files/',
-      data: FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path!, filename: file.name),
-      }),
-      options: Options(
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
-      ),
-    );
+    late final Response<dynamic> response;
+    try {
+      response = await _dio.post(
+        '/api/training-files/',
+        data: FormData.fromMap({
+          'file': await _multipartFromPlatformFile(file),
+        }),
+        options: Options(
+          headers: {
+            'Accept': 'application/json',
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
+          },
+        ),
+      );
+    } on DioException catch (error) {
+      _throwForDioException(error, 'Failed to upload training file.');
+    }
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       final data = response.data;

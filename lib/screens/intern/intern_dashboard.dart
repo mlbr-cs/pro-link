@@ -34,7 +34,10 @@ class _InternDashboardState extends State<InternDashboard> {
     final pages = [
       _InternOverview(intern: intern),
       _SkillMarksScreen(intern: intern),
-      _ScheduleScreen(intern: intern),
+      _ScheduleScreen(
+        intern: intern,
+        scheduleFiles: dataProvider.scheduleFiles,
+      ),
       _DocumentsScreen(documents: dataProvider.trainingDocuments),
       _DigitalIdScreen(intern: intern, photoUrl: currentUser?.photoUrl),
     ];
@@ -246,9 +249,10 @@ class _SkillMarksScreen extends StatelessWidget {
 }
 
 class _ScheduleScreen extends StatelessWidget {
-  const _ScheduleScreen({required this.intern});
+  const _ScheduleScreen({required this.intern, required this.scheduleFiles});
 
   final Intern? intern;
+  final List<String> scheduleFiles;
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +263,7 @@ class _ScheduleScreen extends StatelessWidget {
       );
     }
 
-    if (intern!.timetable.isEmpty) {
+    if (intern!.timetable.isEmpty && scheduleFiles.isEmpty) {
       return const _InternEmptyState(
         title: 'No timetable returned yet',
         subtitle:
@@ -284,42 +288,78 @@ class _ScheduleScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFFE4E7EC)),
-          ),
-          child: Table(
-            border: TableBorder.all(color: const Color(0xFFE4E7EC)),
-            columnWidths: const {
-              0: FlexColumnWidth(1.2),
-              1: FlexColumnWidth(1.6),
-              2: FlexColumnWidth(1.6),
-            },
-            children: [
-              const TableRow(
-                decoration: BoxDecoration(color: Color(0xFFF8FAFC)),
+        if (scheduleFiles.isNotEmpty) ...[
+          ...scheduleFiles.map(
+            (fileName) => Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xFFE4E7EC)),
+              ),
+              child: Row(
                 children: [
-                  _TableHeaderCell(text: 'Day'),
-                  _TableHeaderCell(text: 'Morning'),
-                  _TableHeaderCell(text: 'Afternoon'),
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F4F7),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.table_chart_outlined),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Text(
+                      fileName,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
                 ],
               ),
-              ...intern!.timetable.map(
-                (entry) => TableRow(
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+        if (intern!.timetable.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: const Color(0xFFE4E7EC)),
+            ),
+            child: Table(
+              border: TableBorder.all(color: const Color(0xFFE4E7EC)),
+              columnWidths: const {
+                0: FlexColumnWidth(1.2),
+                1: FlexColumnWidth(1.6),
+                2: FlexColumnWidth(1.6),
+              },
+              children: [
+                const TableRow(
+                  decoration: BoxDecoration(color: Color(0xFFF8FAFC)),
                   children: [
-                    _TableValueCell(text: entry.day),
-                    _TableValueCell(text: entry.morning),
-                    _TableValueCell(text: entry.afternoon),
+                    _TableHeaderCell(text: 'Day'),
+                    _TableHeaderCell(text: 'Morning'),
+                    _TableHeaderCell(text: 'Afternoon'),
                   ],
                 ),
-              ),
-            ],
+                ...intern!.timetable.map(
+                  (entry) => TableRow(
+                    children: [
+                      _TableValueCell(text: entry.day),
+                      _TableValueCell(text: entry.morning),
+                      _TableValueCell(text: entry.afternoon),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

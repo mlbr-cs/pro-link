@@ -279,7 +279,9 @@ class _MentorTrainingFilesScreen extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: () async {
-                  final result = await FilePicker.platform.pickFiles();
+                  final result = await FilePicker.platform.pickFiles(
+                    withData: true,
+                  );
                   if (!context.mounted ||
                       result == null ||
                       result.files.isEmpty) {
@@ -592,15 +594,29 @@ class _AttendanceCard extends StatelessWidget {
     return List<String>.generate(8, (index) => 'Week ${index + 1}');
   }
 
+  int _weekNumber(String label) {
+    final match = RegExp(r'\d+').firstMatch(label);
+    return match == null ? 9999 : int.tryParse(match.group(0)!) ?? 9999;
+  }
+
   @override
   Widget build(BuildContext context) {
     final existingByWeek = <String, bool>{};
     for (final record in intern.attendance) {
       existingByWeek[record.weekLabel] = record.isPresent;
     }
-    final weeks = intern.attendance.isEmpty
-        ? _defaultWeeks()
-        : intern.attendance.map((r) => r.weekLabel).toList();
+    final weeks = <String>{
+      ..._defaultWeeks(),
+      ...intern.attendance.map((record) => record.weekLabel),
+    }.where((week) => week.isNotEmpty).toList()
+      ..sort((left, right) {
+        final leftNumber = _weekNumber(left);
+        final rightNumber = _weekNumber(right);
+        if (leftNumber != rightNumber) {
+          return leftNumber.compareTo(rightNumber);
+        }
+        return left.compareTo(right);
+      });
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),

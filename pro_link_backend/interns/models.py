@@ -99,3 +99,22 @@ class Schedule(models.Model):
 
     def __str__(self) -> str:
         return f'{self.department.name} {self.day} {self.start_time}-{self.end_time}'
+
+
+class ScheduleFile(models.Model):
+    file = models.FileField(upload_to='schedule_files/')
+    file_name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    @property
+    def file_url(self):
+        try:
+            return self.file.url
+        except Exception:
+            return ''
+
+    def __str__(self) -> str:
+        return self.file_name
