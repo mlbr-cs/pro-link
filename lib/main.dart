@@ -34,6 +34,16 @@ class ProLinkApp extends StatelessWidget {
         title: 'Pro-Link',
         debugShowCheckedModeBanner: false,
         theme: _buildTheme(),
+        builder: (context, child) {
+          final mediaQuery = MediaQuery.of(context);
+          final scale = mediaQuery.size.width < 360 ? 0.85 : 1.0;
+          return MediaQuery(
+            data: mediaQuery.copyWith(
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: child!,
+          );
+        },
         initialRoute: LoginScreen.routeName,
         routes: {
           LoginScreen.routeName: (_) => const LoginScreen(),

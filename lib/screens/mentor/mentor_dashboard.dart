@@ -169,13 +169,36 @@ class _MentorOverview extends StatelessWidget {
   }
 }
 
-class _AssignedInternList extends StatelessWidget {
+class _AssignedInternList extends StatefulWidget {
   const _AssignedInternList({required this.interns});
 
   final List<Intern> interns;
 
   @override
+  State<_AssignedInternList> createState() => _AssignedInternListState();
+}
+
+class _AssignedInternListState extends State<_AssignedInternList> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filteredInterns = widget.interns.where((intern) {
+      final query = _searchQuery.toLowerCase();
+      final markStr = intern.performanceScore?.toStringAsFixed(1) ?? 'not submitted';
+      return intern.name.toLowerCase().contains(query) ||
+          intern.departmentName.toLowerCase().contains(query) ||
+          intern.email.toLowerCase().contains(query) ||
+          markStr.contains(query);
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -193,13 +216,67 @@ class _AssignedInternList extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (interns.isEmpty)
-          const _MentorEmptyState(
-            title: 'No assigned interns',
-            subtitle: 'Assignments returned by the backend will appear here.',
-          )
-        else
-          ...interns.map((intern) => _MentorInternCard(intern: intern)),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search by name, department, email, or mark...',
+            prefixIcon: const Icon(Icons.search_outlined),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = widget.interns.isEmpty
+                ? const [_MentorEmptyState(
+                    title: 'No assigned interns',
+                    subtitle: 'Assignments returned by the backend will appear here.',
+                  )]
+                : filteredInterns.isEmpty
+                    ? const [_MentorEmptyState(
+                        title: 'No results found',
+                        subtitle: 'Try adjusting your search query.',
+                      )]
+                    : filteredInterns.map((intern) => _MentorInternCard(intern: intern)).toList();
+
+            if (constraints.maxWidth > 600 && widget.interns.isNotEmpty && filteredInterns.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
       ],
     );
   }
@@ -354,14 +431,28 @@ class _AttendanceTrackerScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (interns.isEmpty)
-          const _MentorEmptyState(
-            title: 'No attendance records',
-            subtitle:
-                'Attendance tracking becomes available once interns are assigned.',
-          )
-        else
-          ...interns.map((intern) => _AttendanceCard(intern: intern)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = interns.isEmpty
+                ? const [_MentorEmptyState(
+                    title: 'No attendance records',
+                    subtitle: 'Attendance tracking becomes available once interns are assigned.',
+                  )]
+                : interns.map((intern) => _AttendanceCard(intern: intern)).toList();
+
+            if (constraints.maxWidth > 600 && interns.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
       ],
     );
   }
@@ -434,6 +525,7 @@ class _MentorInternCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -502,6 +594,7 @@ class _PerformanceFormCardState extends State<_PerformanceFormCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -619,6 +712,7 @@ class _AttendanceCard extends StatelessWidget {
       });
 
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(

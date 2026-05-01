@@ -201,47 +201,64 @@ class _SkillMarksScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        ...intern!.skillEvaluations.map(
-          (evaluation) => Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFE4E7EC)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = intern!.skillEvaluations.map(
+              (evaluation) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: const Color(0xFFE4E7EC)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        evaluation.title,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            evaluation.title,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Text(
+                          evaluation.score.toStringAsFixed(1),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1B263B),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 8),
                     Text(
-                      evaluation.score.toStringAsFixed(1),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1B263B),
+                      evaluation.feedback,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF667085),
+                        height: 1.45,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  evaluation.feedback,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF667085),
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            ).toList();
+
+            if (constraints.maxWidth > 600 && cards.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
         ),
       ],
     );
@@ -288,41 +305,63 @@ class _ScheduleScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (scheduleFiles.isNotEmpty) ...[
-          ...scheduleFiles.map(
-            (fileName) => Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE4E7EC)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF2F4F7),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.table_chart_outlined),
+        const SizedBox(height: 20),
+        if (scheduleFiles.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = scheduleFiles.map(
+                (fileName) => Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xFFE4E7EC)),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      fileName,
-                      style: Theme.of(context).textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF2F4F7),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.table_chart_outlined),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Text(
+                          fileName,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              ).toList();
+
+              if (constraints.maxWidth > 600) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Wrap(
+                    spacing: 14,
+                    runSpacing: 0,
+                    children: cards.map((card) => SizedBox(
+                      width: (constraints.maxWidth - 14) / 2,
+                      child: card,
+                    )).toList(),
+                  ),
+                );
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Column(children: cards),
+              );
+            },
           ),
-          const SizedBox(height: 6),
-        ],
         if (intern!.timetable.isNotEmpty)
           Container(
             width: double.infinity,
@@ -365,20 +404,31 @@ class _ScheduleScreen extends StatelessWidget {
   }
 }
 
-class _DocumentsScreen extends StatelessWidget {
+class _DocumentsScreen extends StatefulWidget {
   const _DocumentsScreen({required this.documents});
 
   final List<TrainingDocument> documents;
 
   @override
+  State<_DocumentsScreen> createState() => _DocumentsScreenState();
+}
+
+class _DocumentsScreenState extends State<_DocumentsScreen> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (documents.isEmpty) {
-      return const _InternEmptyState(
-        title: 'No training documents available',
-        subtitle:
-            'Shared training files will appear here when they are returned by the backend.',
-      );
-    }
+    final filteredDocuments = widget.documents.where((doc) {
+      final query = _searchQuery.toLowerCase();
+      return doc.fileName.toLowerCase().contains(query);
+    }).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,61 +447,122 @@ class _DocumentsScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        ...documents.map(
-          (document) => Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: const Color(0xFFE4E7EC)),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search training files by name...',
+            prefixIcon: const Icon(Icons.search_outlined),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F4F7),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(Icons.description_outlined),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        document.fileName,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        document.category,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF667085),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Download placeholder for ${document.fileName}.',
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.download_outlined),
-                ),
-              ],
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
             ),
           ),
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = widget.documents.isEmpty
+                ? const [_InternEmptyState(
+                    title: 'No training documents available',
+                    subtitle: 'Shared training files will appear here when they are returned by the backend.',
+                  )]
+                : filteredDocuments.isEmpty
+                    ? const [_InternEmptyState(
+                        title: 'No results found',
+                        subtitle: 'Try adjusting your search query.',
+                      )]
+                    : filteredDocuments.map(
+                        (document) => Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: const Color(0xFFE4E7EC)),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF2F4F7),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: const Icon(Icons.description_outlined),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      document.fileName,
+                                      style: Theme.of(context).textTheme.titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.w700),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      document.category,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: const Color(0xFF667085),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Download placeholder for ${document.fileName}.',
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.download_outlined),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ).toList();
+
+            if (constraints.maxWidth > 600 && widget.documents.isNotEmpty && filteredDocuments.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
         ),
       ],
     );

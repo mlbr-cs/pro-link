@@ -205,13 +205,41 @@ class _AdminOverview extends StatelessWidget {
   }
 }
 
-class _InternDirectory extends StatelessWidget {
+class _InternDirectory extends StatefulWidget {
   const _InternDirectory({required this.interns});
 
   final List<Intern> interns;
 
   @override
+  State<_InternDirectory> createState() => _InternDirectoryState();
+}
+
+class _InternDirectoryState extends State<_InternDirectory> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filteredInterns = widget.interns.where((intern) {
+      final query = _searchQuery.toLowerCase();
+      final status = intern.isPending
+          ? 'pending'
+          : intern.isRejected
+          ? 'rejected'
+          : 'approved';
+      return intern.name.toLowerCase().contains(query) ||
+          intern.departmentName.toLowerCase().contains(query) ||
+          intern.email.toLowerCase().contains(query) ||
+          intern.universityId.toLowerCase().contains(query) ||
+          status.contains(query);
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -229,14 +257,67 @@ class _InternDirectory extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (interns.isEmpty)
-          const _EmptyStateCard(
-            title: 'No interns returned yet',
-            subtitle:
-                'Intern records will appear here when the backend returns data.',
-          )
-        else
-          ...interns.map((intern) => _DirectoryCard(intern: intern)),
+        TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _searchQuery = value;
+            });
+          },
+          decoration: InputDecoration(
+            hintText: 'Search by name, department, email, ID, or status...',
+            prefixIcon: const Icon(Icons.search_outlined),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Color(0xFFE4E7EC)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = widget.interns.isEmpty
+                ? const [_EmptyStateCard(
+                    title: 'No interns returned yet',
+                    subtitle: 'Intern records will appear here when the backend returns data.',
+                  )]
+                : filteredInterns.isEmpty
+                    ? const [_EmptyStateCard(
+                        title: 'No results found',
+                        subtitle: 'Try adjusting your search query.',
+                      )]
+                    : filteredInterns.map((intern) => _DirectoryCard(intern: intern)).toList();
+
+            if (constraints.maxWidth > 600 && widget.interns.isNotEmpty && filteredInterns.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
       ],
     );
   }
@@ -272,20 +353,34 @@ class _AssignmentScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (interns.isEmpty)
-          const _EmptyStateCard(
-            title: 'No approved interns available',
-            subtitle:
-                'Approved intern assignments will appear here once registration is validated.',
-          )
-        else
-          ...interns.map(
-            (intern) => _AssignmentCard(
-              intern: intern,
-              departments: departments,
-              mentors: mentors,
-            ),
-          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = interns.isEmpty
+                ? const [_EmptyStateCard(
+                    title: 'No approved interns available',
+                    subtitle: 'Approved intern assignments will appear here once registration is validated.',
+                  )]
+                : interns.map(
+                    (intern) => _AssignmentCard(
+                      intern: intern,
+                      departments: departments,
+                      mentors: mentors,
+                    ),
+                  ).toList();
+
+            if (constraints.maxWidth > 600 && interns.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
       ],
     );
   }
@@ -373,13 +468,28 @@ class _PendingRegistrationsScreen extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
         ),
         const SizedBox(height: 20),
-        if (interns.isEmpty)
-          const _EmptyStateCard(
-            title: 'No pending registrations',
-            subtitle: 'All current registrations have already been reviewed.',
-          )
-        else
-          ...interns.map((intern) => _PendingRegistrationCard(intern: intern)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final cards = interns.isEmpty
+                ? const [_EmptyStateCard(
+                    title: 'No pending registrations',
+                    subtitle: 'All current registrations have already been reviewed.',
+                  )]
+                : interns.map((intern) => _PendingRegistrationCard(intern: intern)).toList();
+
+            if (constraints.maxWidth > 600 && interns.isNotEmpty) {
+              return Wrap(
+                spacing: 14,
+                runSpacing: 0,
+                children: cards.map((card) => SizedBox(
+                  width: (constraints.maxWidth - 14) / 2,
+                  child: card,
+                )).toList(),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
       ],
     );
   }
@@ -471,6 +581,7 @@ class _DirectoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -571,6 +682,7 @@ class _AssignmentCardState extends State<_AssignmentCard> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -740,6 +852,7 @@ class _PendingRegistrationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(

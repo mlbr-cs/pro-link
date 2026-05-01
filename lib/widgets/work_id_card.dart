@@ -16,9 +16,13 @@ class WorkIdCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         gradient: const LinearGradient(
@@ -136,6 +140,8 @@ class WorkIdCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
+    ),
     );
   }
 }
