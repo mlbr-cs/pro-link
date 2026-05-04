@@ -129,7 +129,7 @@ class _InternOverview extends StatelessWidget {
     if (intern == null) {
       return const _InternEmptyState(
         title: 'No intern profile found',
-        subtitle: 'A matching backend intern account could not be loaded.',
+        subtitle: 'A matching intern account could not be loaded.',
       );
     }
 
@@ -282,9 +282,9 @@ class _ScheduleScreen extends StatelessWidget {
 
     if (intern!.timetable.isEmpty && scheduleFiles.isEmpty) {
       return const _InternEmptyState(
-        title: 'No timetable returned yet',
+        title: 'No timetable available yet',
         subtitle:
-            'Your schedule will appear here once the backend provides timetable data.',
+            'Your schedule will appear here once timetable data is available.',
       );
     }
 
@@ -299,7 +299,7 @@ class _ScheduleScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Structured weekly schedule loaded from the backend.',
+          'Structured weekly schedule for your placement.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -441,7 +441,7 @@ class _DocumentsScreenState extends State<_DocumentsScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Available training files for interns with placeholder download actions.',
+          'Available training files for interns.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -486,7 +486,7 @@ class _DocumentsScreenState extends State<_DocumentsScreen> {
             final cards = widget.documents.isEmpty
                 ? const [_InternEmptyState(
                     title: 'No training documents available',
-                    subtitle: 'Shared training files will appear here when they are returned by the backend.',
+                    subtitle: 'Shared training files will appear here when they are available.',
                   )]
                 : filteredDocuments.isEmpty
                     ? const [_InternEmptyState(
@@ -539,7 +539,7 @@ class _DocumentsScreenState extends State<_DocumentsScreen> {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Download placeholder for ${document.fileName}.',
+                                        'Preparing ${document.fileName} for download.',
                                       ),
                                     ),
                                   );

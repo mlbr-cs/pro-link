@@ -260,15 +260,11 @@ class ApiService {
 
   Future<List<AppUser>> getPendingUsers() async {
     final url = '$baseUrl/api/pending-users/';
-    print('Calling: $url');
 
     final response = await _client.get(
       Uri.parse(url),
       headers: await _headers(),
     );
-
-    print('Status: ${response.statusCode}');
-    print('Response: ${response.body}');
 
     if (response.statusCode == 200) {
       return _decodeListResponse(response.body)
@@ -282,15 +278,11 @@ class ApiService {
 
   Future<AppUser> approveUser(String userId) async {
     final url = '$baseUrl/api/approve-user/$userId/';
-    print('Calling: $url');
 
     final response = await _client.post(
       Uri.parse(url),
       headers: await _headers(),
     );
-
-    print('Status: ${response.statusCode}');
-    print('Response: ${response.body}');
 
     if (response.statusCode == 200) {
       return AppUser.fromJson(_decodeMapResponse(response.body));
@@ -301,15 +293,11 @@ class ApiService {
 
   Future<AppUser> rejectUser(String userId) async {
     final url = '$baseUrl/api/reject-user/$userId/';
-    print('Calling: $url');
 
     final response = await _client.post(
       Uri.parse(url),
       headers: await _headers(),
     );
-
-    print('Status: ${response.statusCode}');
-    print('Response: ${response.body}');
 
     if (response.statusCode == 200) {
       return AppUser.fromJson(_decodeMapResponse(response.body));

@@ -135,8 +135,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      _LoginHintCard(theme: theme),
-                      const SizedBox(height: 24),
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -171,8 +169,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                           ),
                         ),
@@ -251,13 +249,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Secure JWT authentication with role-based backend access.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF667085),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -293,45 +284,6 @@ class _LoginScreenState extends State<LoginScreen> {
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: const BorderSide(color: Color(0xFF344054), width: 1.3),
-      ),
-    );
-  }
-}
-
-class _LoginHintCard extends StatelessWidget {
-  const _LoginHintCard({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE4E7EC)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Backend-connected login',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF101828),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'After sign-in, dashboard data is loaded from the Django REST backend using your stored JWT token.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF475467),
-              height: 1.5,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -21,7 +21,7 @@ class _MentorDashboardState extends State<MentorDashboard> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final dataProvider = context.watch<AppDataProvider>();
-    final mentorName = authProvider.currentUser?.name ?? 'Mentor User';
+    final mentorName = authProvider.currentUser?.name ?? 'Mentor';
     final assignedInterns = dataProvider.internsForMentor(mentorName);
 
     if (dataProvider.isLoading && dataProvider.interns.isEmpty) {
@@ -255,7 +255,7 @@ class _AssignedInternListState extends State<_AssignedInternList> {
             final cards = widget.interns.isEmpty
                 ? const [_MentorEmptyState(
                     title: 'No assigned interns',
-                    subtitle: 'Assignments returned by the backend will appear here.',
+                    subtitle: 'Assigned interns will appear here after placement is confirmed.',
                   )]
                 : filteredInterns.isEmpty
                     ? const [_MentorEmptyState(
@@ -337,7 +337,7 @@ class _MentorTrainingFilesScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Pick a supporting file for interns and upload it to the backend.',
+          'Pick a supporting file and upload it for interns.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),

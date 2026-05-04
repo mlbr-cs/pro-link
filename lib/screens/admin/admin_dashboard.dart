@@ -33,7 +33,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     final pages = [
       _AdminOverview(
-        adminName: user?.name ?? 'Admin User',
+        adminName: user?.name ?? 'Admin',
         approvedInternCount: dataProvider.approvedInterns.length,
         pendingCount: dataProvider.pendingRegistrations.length,
         mentorCount: dataProvider.mentors.length,
@@ -198,7 +198,7 @@ class _AdminOverview extends StatelessWidget {
         const _InfoPanel(
           title: 'Connected Admin Functions',
           subtitle:
-              'This workspace now loads interns, departments, mentors, schedules, and registration updates from the Django REST backend.',
+              'Manage interns, departments, mentors, schedules, and registration updates from one workspace.',
         ),
       ],
     );
@@ -295,8 +295,8 @@ class _InternDirectoryState extends State<_InternDirectory> {
           builder: (context, constraints) {
             final cards = widget.interns.isEmpty
                 ? const [_EmptyStateCard(
-                    title: 'No interns returned yet',
-                    subtitle: 'Intern records will appear here when the backend returns data.',
+                    title: 'No interns available yet',
+                    subtitle: 'Intern records will appear here after registration approval.',
                   )]
                 : filteredInterns.isEmpty
                     ? const [_EmptyStateCard(
@@ -347,7 +347,7 @@ class _AssignmentScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Update internship placement details and persist them through the backend assignment endpoint.',
+          'Update internship placement details for approved interns.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),
@@ -404,7 +404,7 @@ class _OfficeTimetableScreen extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Pick a timetable document and send it to the backend schedule upload endpoint.',
+          'Pick a timetable document and upload it for interns.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF667085)),

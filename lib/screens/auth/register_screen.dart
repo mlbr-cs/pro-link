@@ -235,9 +235,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ? null
                             : () async {
                                 final result = await FilePicker.platform.pickFiles(
-                                  // Some Android emulators don't show anything for "Images"
-                                  // if MediaStore has no indexed images. Allow any file so the
-                                  // user can browse to Download/ and pick a JPG manually.
                                   type: FileType.any,
                                   withData: true,
                                   dialogTitle: 'Select profile photo',
@@ -249,7 +246,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
-                                          'No photo selected. If the picker looks empty on the emulator, first add an image to the emulator storage (e.g. Download) or use a real device.',
+                                          'No photo selected.',
                                         ),
                                       ),
                                     );
@@ -282,14 +279,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               : 'Photo: ${_selectedPhoto!.name}',
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'If the picker is empty on the emulator: upload/copy an image into the emulator (Download folder), then try again.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF667085),
-                          height: 1.4,
-                        ),
-                      ),
                       const SizedBox(height: 18),
                       TextFormField(
                         controller: _passwordController,
@@ -306,8 +295,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             },
                             icon: Icon(
                               _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                           ),
                         ),
@@ -338,8 +327,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             },
                             icon: Icon(
                               _obscureConfirmPassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                             ),
                           ),
                         ),
