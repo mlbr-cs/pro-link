@@ -1,45 +1,47 @@
-# Pro-Link — Enterprise Internship & Skill Tracking
+# Pro-Link -Enterprise Internship & Skill Tracking
 
-A Flutter-based professional management app that bridges the gap between university and the corporate world. Pro-Link streamlines the internship process by allowing companies to track student progress, manage corporate IDs, and evaluate professional skills in a centralized environment.
+**Pro-Link** is a Flutter-based internship management platform designed to strengthen collaboration between universities and organizations. It provides a centralized system for managing internships, monitoring student progress, evaluating professional skills, and issuing digital work IDs.
 
-> Built for the Mobile Development module — Constantine 2 University (Abdelhamid Mehri), Department of Fundamental Computing and its Applications (IFA), 2025–2026.
-
----
+The project was developed collaboratively as part of a university mobile development project.
 
 ## Features
 
-### Admin (HR / University Coordinator)
-- Manage and validate intern registrations
-- Assign interns to departments and mentors
-- Upload office schedules and policy handbooks
+### Admin
 
-### Mentor (Professional Supervisor / Teacher)
-- Evaluate intern performance and submit marks
-- Upload training modules and resources
-- Track weekly attendance for assigned groups
+* Manage and validate intern registrations
+* Assign interns to departments and mentors
+* Upload office schedules and policy documents
+* Oversee internship activities and records
 
-### Intern (Student)
-- Register and await admin validation
-- View Digital Work ID card with photo and department info
-- Access shift schedules, training files, and skill evaluations
+### Mentor
+
+* Evaluate intern performance
+* Submit assessments and marks
+* Upload training materials and resources
+* Track attendance for assigned interns
+
+### Intern
+
+* Register and await approval
+* View a digital work ID card
+* Access schedules and training resources
+* Review evaluations and skill assessments
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Flutter (Dart) |
-| Backend | REST API (Laravel / Node.js) |
-| Database | MySQL / PostgreSQL |
-| Auth | JWT (JSON Web Tokens) |
-| File storage | Server-side upload (multipart/form-data) |
-
-> Note: SQLite is not used per project requirements.
+| Layer          | Technology            |
+| -------------- | --------------------- |
+| Frontend       | Flutter (Dart)        |
+| Backend        | Django REST Framework |
+| Authentication | JWT (JSON Web Tokens) |
+| Database       | PostgreSQL            |
+| File Storage   | Server-side uploads   |
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 lib/
@@ -65,44 +67,7 @@ lib/
 └── widgets/
     ├── work_id_card.dart
     └── search_bar.dart
-```
 
----
-
----
-
-## Sprints
-
-| Sprint | Focus | Points |
-|--------|-------|--------|
-| Sprint 1 | Frontend UI & role dashboards | 3 pts |
-| Sprint 2 | Core functions per role | 2.5 pts |
-| Sprint 3 | Backend, auth & data handling | 2.5 pts |
-| Sprint 4 | Search & responsive design | 1 pt |
-| Creativity | Extra APIs, notifications, design | 2 pts |
-
----
-
-## License
-
-This project is submitted as academic work for Constantine 2 University. All rights reserved by the project team.
-
----
-
-## Backend Team Setup
-
-The backend authentication foundation for the team now lives in `pro_link_backend/`.
-
-### Backend stack
-- Django REST Framework
-- PostgreSQL
-- JWT with `djangorestframework-simplejwt`
-- `django-cors-headers`
-- `python-decouple`
-
-### Folder
-
-```text
 pro_link_backend/
 ├── manage.py
 ├── requirements.txt
@@ -118,22 +83,68 @@ pro_link_backend/
     └── permissions.py
 ```
 
-### Team workflow
-- The `users` app owns authentication and the custom `User` model.
-- Other backend teammates should import role guards from `users/permissions.py`.
-- Interns and mentors apps should use `settings.AUTH_USER_MODEL` for any user relation.
-- Auth routes are mounted under `/api/auth/`.
+---
 
-### Setup
-1. Create a virtual environment inside `pro_link_backend/`.
-2. Install packages from `requirements.txt`.
-3. Copy `.env.example` to `.env` and update `SECRET_KEY`, `DEBUG`, and `DATABASE_URL`.
-4. Run `python manage.py makemigrations users`.
-5. Run `python manage.py migrate`.
-6. Start the server with `python manage.py runserver`.
+## 🚀 Getting Started
 
-### Available auth endpoints
-- `POST /api/auth/register/`
-- `POST /api/auth/login/`
-- `GET /api/auth/me/`
-- `POST /api/auth/token/refresh/`
+### Frontend
+
+```bash
+flutter pub get
+flutter run
+```
+
+### Backend
+
+```bash
+cd pro_link_backend
+
+python -m venv venv
+
+# Activate the virtual environment
+# Windows:
+venv\Scripts\activate
+
+# Linux/macOS:
+source venv/bin/activate
+
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+Create a `.env` file (or copy `.env.example`) and configure the required environment variables before running the backend.
+
+---
+
+## 🔐 Authentication API
+
+| Method | Endpoint                   | Description                        |
+| ------ | -------------------------- | ---------------------------------- |
+| POST   | `/api/auth/register/`      | Register a new user                |
+| POST   | `/api/auth/login/`         | Authenticate and obtain JWT tokens |
+| GET    | `/api/auth/me/`            | Retrieve current user information  |
+| POST   | `/api/auth/token/refresh/` | Refresh an access token            |
+
+---
+
+## 📌 Key Highlights
+
+* Multi-role access (Admin, Mentor, Intern)
+* JWT-based authentication
+* Internship tracking and management
+* Digital work ID generation
+* Skill evaluation and performance monitoring
+* Training resources and schedule management
+
+---
+
+## Team Project
+
+This repository represents a collaborative academic project developed by multiple contributors. Both the mobile application and backend services were designed to work together to provide a complete internship management solution.
+
+---
+
+## License
+
+This project is intended for educational purposes. Feel free to explore the code and adapt it for learning or personal projects in accordance with the repository license.
